@@ -10,7 +10,7 @@
 #define TITLE "Dr. Pellet"
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800 
-#define GRID_ROWS 12 // The height of the play-area. So this is actually wrong lol ROWS are COLUMNS and vice versa. I'm retarded I guess 
+#define GRID_ROWS 12 // The height of the play-area.
 #define GRID_COLUMNS 8 // The width of the play-area.
 #define GRID_ROW_CLEARANCE 6 // Viruses will not spawn above or on this ROW.
 #define ENTITY_COUNT (GRID_ROWS * GRID_COLUMNS) // The amount of entities in the grid. 
