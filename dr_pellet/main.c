@@ -13,7 +13,9 @@
 #define GRID_ROWS 12 // The height of the play-area.
 #define GRID_COLUMNS 8 // The width of the play-area.
 #define GRID_ROW_CLEARANCE 6 // Viruses will not spawn above or on this ROW.
-#define ENTITY_COUNT (GRID_ROWS * GRID_COLUMNS) // The amount of entities in the grid. 
+#define ENTITY_N 96 // The N viruses to be spawned on the grid.
+#define RECT_SIZE 30
+#define PADDING 1
 
 enum {
 	LEFT = -1,
@@ -37,29 +39,52 @@ struct {
 } typedef entity;
 
 struct {
+	bool empty;
 	entity* c_entity;
 } typedef cell;
 
 struct {
 	entity_type type_left;
 	entity_type type_right;
+	int pos_x[2];
+	int pos_y[2];
+	bool has_moved;
 } typedef pill;
 
-void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity entities[GRID_ROWS][GRID_COLUMNS]) {
-	for (int i = 0; i < GRID_ROWS; i++) {
-		for (int j = 0; j < GRID_COLUMNS; j++) {
-			grid[i][j] = (cell){ &entities[i][j] };
-		}
-	}
+SDL_Rect* get_rect(cell c) {
+	return &c.c_entity->rect;
 }
 
-SDL_Rect create_std_rect(int i, int j) {
-	#define POS_X 350
-	#define POS_Y 250
-	#define RECT_SIZE 30
-	#define PADDING 2
-	
-	SDL_Rect rect = { POS_X + ((PADDING + RECT_SIZE) * j), POS_Y + ((PADDING + RECT_SIZE) * i), RECT_SIZE, RECT_SIZE};
+void set_position_rect(SDL_Rect* rect, int i, int j) {
+	rect->x = (WINDOW_WIDTH / 2) - (GRID_ROWS * RECT_SIZE) + (PADDING + RECT_SIZE) * j;
+	rect->y = (WINDOW_HEIGHT / 4) + (PADDING + RECT_SIZE) * i;
+	rect->w = RECT_SIZE;
+	rect->h = RECT_SIZE;
+}
+
+void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities) {
+	int entity_count = 0;
+	for (int i = 0; i < GRID_ROWS; i++)
+	{
+		for (int j = 0; j < GRID_COLUMNS; j++)
+		{
+			if (entity_count < ENTITY_N) 
+			{
+					grid[i][j].empty = false;
+					grid[i][j].c_entity = &entities[entity_count];
+					set_position_rect(&grid[i][j].c_entity->rect, i, j);
+					entity_count++;
+			}
+		}
+	}
+	printf("entity count: %d\n", entity_count);
+}
+
+
+
+SDL_Rect create_rect() {
+	#define DEFAULT_POS 0	
+	SDL_Rect rect = { DEFAULT_POS + (PADDING + RECT_SIZE), DEFAULT_POS + (PADDING + RECT_SIZE), RECT_SIZE, RECT_SIZE};
 	return rect;
 }
 
@@ -84,85 +109,43 @@ entity create_entity(entity_type e_type, SDL_Rect rect) {
 		case YELLOW_VIRUS:
 			return (entity) { YELLOW_VIRUS, rect };
 	}
+	return;
+}
+entity* init_entities() {
+	#define ENTITY_N 96 
+	int RED_COUNT = 0, BLUE_COUNT = 0, YELLOW_COUNT = 0;
+	entity* entities = malloc(sizeof(entity) * ENTITY_N);
+	entity_type e_type;
+	for (int i = 0; i < ENTITY_N; i++)
+	{
+		e_type = (rand() % 3) + 1;
+		switch (e_type) 
+		{
+			case RED_VIRUS:
+				RED_COUNT++;
+				break;
+			case BLUE_VIRUS:
+				BLUE_COUNT++;
+				break;
+			case YELLOW_VIRUS:
+				YELLOW_COUNT++;
+				break;
+		}
+		entity ent = { e_type, create_rect() };
+		entities[i] = ent;
+	}
+	return entities;
 }
 
-void init_entities(entity entities[GRID_ROWS][GRID_COLUMNS]) {
-	#define ENTITY_TOTAL 32 // The amount of entites to be created. Which isn't really correct because we are not adding the GRID_CLEARANCE entities to this. lol
-	int v_total = ENTITY_TOTAL;
-	int total_empty = 0;
-	entity_type e_type = EMPTY;
-	for (int i = 0; i < GRID_ROWS; i++) {
-		for (int j = 0; j < GRID_COLUMNS; j++) 
-		{
-			if (i > GRID_ROW_CLEARANCE) 
-			{
-				if (v_total) 
-				{	
-					SDL_Rect rect = create_std_rect(i, j);
-					e_type = (rand() % 4);
-					switch (e_type) {
-						case EMPTY:
-							entities[i][j] = create_entity(e_type, rect);
-							total_empty++;
-							break;
+void update_rect_pos_y(cell c, int index_i) {
+	c.c_entity->rect.y += c.c_entity->rect.w * index_i;
+}
 
-						case RED_VIRUS:
-							if (check_adjacent_entities(entities, i, j, e_type)) {
-								entities[i][j] = create_entity(EMPTY, rect);
-							}
-							else { 
-								if (j > 1) {
-									if (entities[i][j - 1].type > 0) {
-										entities[i][j] = create_entity(EMPTY, rect);
-										break;
-									}
-								}
-								entities[i][j] = create_entity(e_type, rect);
-								puts("RED_VIRUS");
-							}
-							break;
-
-						case BLUE_VIRUS:
-							if (check_adjacent_entities(entities, i, j, e_type) == 1) {
-								entities[i][j] = create_entity(EMPTY, rect);
-							}
-							else {
-								if (j > 1) {
-									if (entities[i][j - 1].type > 0) {
-										entities[i][j] = create_entity(EMPTY, rect);
-										break;
-									}
-								}
-								entities[i][j] = create_entity(e_type, rect);
-								puts("BLUE_VIRUS");
-							}
-							break;
-
-						case YELLOW_VIRUS:
-							if (check_adjacent_entities(entities, i, j, e_type)) {
-								entities[i][j] = create_entity(EMPTY, rect);
-							}
-							else {
-								if (j > 1) {
-									if (entities[i][j - 1].type > 0) {
-										entities[i][j] = create_entity(EMPTY, rect);
-										break;
-									}
-								}
-								entities[i][j] = create_entity(e_type, rect);
-							}
-							break;
-					}
-					v_total--;
-				}
-
-			}
-			else {
-				entities[i][j] = (entity) { EMPTY };
-			}
-		}
-	}
-	printf("VIRUS_TOTAL: %d", v_total);
+void move_pill(cell* old_c, cell* new_c, int i) {
+	cell tmp;
+	tmp.c_entity = new_c->c_entity;
+	new_c->c_entity = old_c->c_entity;
+	old_c->c_entity = tmp.c_entity;
 }
 
 int main(int argc, char** argv)
@@ -174,8 +157,7 @@ int main(int argc, char** argv)
 	
 	srand(time(NULL));  
 
-	entity entities[GRID_ROWS][GRID_COLUMNS];
-	init_entities(entities);
+	entity* entities = init_entities();
 	cell grid[GRID_ROWS][GRID_COLUMNS];
 	init_grid(grid, entities);
 	
@@ -197,9 +179,8 @@ int main(int argc, char** argv)
 
 	direction dir_x = NEUTRAL;
 	int gravity = 1;
-	bool has_moved = false;
 	pill p1 = { BLUE_VIRUS , YELLOW_VIRUS};
-	
+	p1.has_moved = false;
 	bool quit = false;
 	while (!quit)
 	{
@@ -219,19 +200,6 @@ int main(int argc, char** argv)
 		}
 
 		// Logic
-		entities[0][0] = create_entity(p1.type_left, create_std_rect(0, 0));
-		entities[0][1] = create_entity(p1.type_right, create_std_rect(0, 1));
-		grid[0][0].c_entity = &entities[0][0];
-		grid[0][1].c_entity = &entities[0][1];
-		for (int i = 0; i < GRID_ROWS; i++) 
-		{
-			for (int j = 0; j < GRID_COLUMNS; j++) 
-			{
-				if (has_moved) {
-					continue;
-				}
-			}
-		}
 
 		// Rendering
 		SDL_RenderClear(renderer);
@@ -242,21 +210,38 @@ int main(int argc, char** argv)
 		{
 			for (int j = 0; j < GRID_COLUMNS; j++) 
 			{
-				if (grid[i][j].c_entity->type == RED_VIRUS) {
-					SDL_RenderCopy(renderer, red_block_t, NULL, &grid[i][j].c_entity->rect);
-				}
+				if (!grid[i][j].empty) 
+				{
+					if (grid[i][j].c_entity->type == RED_VIRUS) {
+						SDL_RenderCopy(renderer, red_block_t, NULL, get_rect(grid[i][j]));
+					}
 
-				if (grid[i][j].c_entity->type == BLUE_VIRUS) {
-					SDL_RenderCopy(renderer, blue_block_t, NULL, &grid[i][j].c_entity->rect);
-				}
-	
-				if (grid[i][j].c_entity->type == YELLOW_VIRUS) {
-					SDL_RenderCopy(renderer, yellow_block_t, NULL, &grid[i][j].c_entity->rect);
+					if (grid[i][j].c_entity->type == BLUE_VIRUS) {
+						SDL_RenderCopy(renderer, blue_block_t, NULL, get_rect(grid[i][j]));
+					}
+		
+					if (grid[i][j].c_entity->type == YELLOW_VIRUS) {
+						SDL_RenderCopy(renderer, yellow_block_t, NULL, get_rect(grid[i][j]));
+					}
 				}
 			}
 		}
+		
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 		SDL_RenderPresent(renderer);
 	}
+	int count = 0;
+	for (int i = 0; i < GRID_ROWS; i++) {
+		for (int j = 0; j < GRID_COLUMNS; j++) {
+			if (grid[i][j].c_entity != NULL) count++;
+		}
+	}
+	printf("Populated cells: %d\n", count);
+	count = 0;
+	for (int i = 0; i < ENTITY_N; i++) {
+		printf("i: %d, type: %d \n", i, entities[i].type);
+		count++;
+	}
+	printf("Entities in entities list: %d\n", count);
 	return 0;
 }
