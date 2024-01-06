@@ -156,17 +156,6 @@ entity* init_entities() {
 	return entities;
 }
 
-void update_rect_pos_y(cell c, int index_i) {
-	c.c_entity->rect.y += c.c_entity->rect.w * index_i;
-}
-
-void move_pill(cell* old_c, cell* new_c, int i) {
-	cell tmp;
-	tmp.c_entity = new_c->c_entity;
-	new_c->c_entity = old_c->c_entity;
-	old_c->c_entity = tmp.c_entity;
-}
-
 void render_grid_area(SDL_Renderer* renderer) {
 	SDL_Rect bg_rect;
 	bg_rect.x = WINDOW_WIDTH / 5;
@@ -179,7 +168,16 @@ void render_grid_area(SDL_Renderer* renderer) {
 	SDL_RenderFillRect(renderer, &bg_rect);
 	SDL_RenderDrawRect(renderer, &bg_rect);
 
-	SDL_SetRenderDrawColor(renderer, 25, 25, 25, 255);
+	// White Outline
+	SDL_Rect bg_rect1;
+	bg_rect1.x = -1 + WINDOW_WIDTH / 5;
+	bg_rect1.y = -1 + WINDOW_HEIGHT / 4;
+	bg_rect1.w = GRID_COLUMNS * RECT_SIZE + PADDING + 6 + 2;
+	bg_rect1.h = GRID_ROWS * RECT_SIZE + PADDING + 10 + 2;
+
+	SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 255);
+	SDL_RenderDrawRect(renderer, &bg_rect1);
+
 }
 
 void render_bg(SDL_Renderer* renderer) {
