@@ -12,7 +12,7 @@
 #define WINDOW_HEIGHT 800 
 #define GRID_ROWS 12 // The height of the play-area.
 #define GRID_COLUMNS 8 // The width of the play-area.
-#define GRID_ROW_CLEARANCE 4 // Viruses will not spawn above or on this ROW.
+#define GRID_ROW_CLEARANCE 6 // Viruses will not spawn above or on this ROW.
 #define VIRUS_N 66 // The N viruses to be spawned on the grid.
 #define RECT_SIZE 30
 #define PADDING 1
@@ -46,6 +46,7 @@ struct {
 	entity* right;
 	int row;
 	int column;
+	bool active;
 } typedef pill;
 
 int get_random_integer(int i) 
@@ -260,7 +261,8 @@ int main(int argc, char** argv)
 	cell grid[GRID_ROWS][GRID_COLUMNS];
 	init_grid(grid, entities_v);
 
-	pill pl = { &entities_p[0], &entities_p[1], 0, 0};
+	pill pl = { &entities_p[0], &entities_p[1], 0, 0, true};
+	int pill_count = 2;
 
 	grid[0][0].c_entity = pl.left;
 	grid[0][1].c_entity = pl.right;
@@ -294,7 +296,7 @@ int main(int argc, char** argv)
 	float step_time = 0;
 	float step_limit = 1;
 
-	int bg_animate = 0;
+	bool disable_ghost = false;
 
 	direction dir_x = NEUTRAL;
 	bool left_has_moved = false;
@@ -324,6 +326,18 @@ int main(int argc, char** argv)
 				dir_x = RIGHT;
 			}
 
+			if (event.key.keysym.sym == SDLK_g && event.key.state == SDL_PRESSED) {
+				switch (disable_ghost)
+				{
+				case true:
+					disable_ghost = false;
+					break;
+				case false:
+					disable_ghost = true;
+					break;
+				}
+			}
+
 			if (event.type == SDL_QUIT) {
 				quit = true;
 			}
@@ -331,6 +345,21 @@ int main(int argc, char** argv)
 
 
 		// Logic
+
+		// Sets new active pill
+		if (!pl.active) {
+			pill_count += 2;
+			pl.row = 0;
+			pl.left = &entities_p[pill_count];
+			pl.right = &entities_p[pill_count + 1];
+			grid[pl.row][pl.column].c_entity = pl.left;
+			grid[pl.row][pl.column + 1].c_entity = pl.right;
+			set_grid_position_rect(get_rect(grid[pl.row][pl.column]), pl.row, pl.column);
+			set_grid_position_rect(get_rect(grid[pl.row][pl.column + 1]), pl.row, pl.column + 1);
+			pl.active = true;
+		}
+
+		// Horizontal movement
 		if (dir_x) 
 		{
 			if (dir_x == LEFT) 
@@ -372,7 +401,7 @@ int main(int argc, char** argv)
 		// Gravity is applied here.
 		if (step_time > step_limit)
 		{
-			set_grid_position_rect(get_rect(grid[pl.row][pl.column]), pl.row, pl.column); // Fix janky looking movement?
+			set_grid_position_rect(get_rect(grid[pl.row][pl.column]), pl.row, pl.column); // Might improve the look of side-movement at step_limit
 			set_grid_position_rect(get_rect(grid[pl.row][pl.column]), pl.row, pl.column);
 			for (int i = 0; i < GRID_ROWS; i++)
 			{
@@ -381,13 +410,13 @@ int main(int argc, char** argv)
 					if (pl.left == grid[i][j].c_entity && !left_has_moved) {
 						if (grid[i + 1][j].c_entity || grid[i + 1][j + 1].c_entity) {
 							printf("Collision at grid[%d][%d]\n", i + 1, j);
-							break;
+							pl.active = false;
 						}
 						else {
 							puts("pl - left");
 							grid[i + 1][j].c_entity = grid[i][j].c_entity;
 							pl.left = grid[i + 1][j].c_entity;
-							pl.row = i + 1;
+							pl.row += 1;
 							set_grid_position_rect(get_rect(grid[i + 1][j]), i + 1, j);
 							grid[i][j].c_entity = NULL;
 							left_has_moved = true;
@@ -408,16 +437,39 @@ int main(int argc, char** argv)
 		// Rendering
 		SDL_RenderClear(renderer);
 		
-		render_bg(renderer, delta_time, &bg_animate);
+		render_bg(renderer, delta_time);
 
 		render_grid_area(renderer);
 
 		render_character_area(renderer, dr_pellet_t);
 
+		bool render_ghost = false;
 		for (int i = 0; i < GRID_ROWS; i++) 
 		{
 			for (int j = 0; j < GRID_COLUMNS; j++) 
 			{
+				if (i != pl.row - 1 && !disable_ghost)
+				{
+					if (!render_ghost)
+					{
+						if (grid[i + 1][pl.column].c_entity || grid[i + 1][pl.column + 1].c_entity)
+						{
+							if (j == pl.column)
+							{
+								SDL_Rect ghost_piece;
+								ghost_piece.x = (WINDOW_WIDTH / 2) - (GRID_ROWS * RECT_SIZE) + (PADDING + RECT_SIZE) * j;
+								ghost_piece.y = (WINDOW_HEIGHT / 4) + (PADDING + RECT_SIZE) * i;
+								ghost_piece.w = RECT_SIZE * 2;
+								ghost_piece.h = RECT_SIZE;
+								SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 200);
+								SDL_RenderDrawRect(renderer, &ghost_piece);
+								render_ghost = true;
+							}
+
+						}
+					}
+				}
+
 				if (grid[i][j].c_entity != NULL) 
 				{	
 					if (grid[i][j].c_entity->type == RED_VIRUS) {
@@ -432,6 +484,7 @@ int main(int argc, char** argv)
 						SDL_RenderCopy(renderer, yellow_block_t, NULL, get_rect(grid[i][j]));
 					}
 				}
+				
 			}
 		}
 		
