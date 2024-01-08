@@ -13,7 +13,7 @@
 #define GRID_ROWS 12 // The height of the play-area.
 #define GRID_COLUMNS 8 // The width of the play-area.
 #define GRID_ROW_CLEARANCE 4 // Viruses will not spawn above or on this ROW.
-#define ENTITY_N 66 // The N viruses to be spawned on the grid.
+#define VIRUS_N 66 // The N viruses to be spawned on the grid.
 #define RECT_SIZE 30
 #define PADDING 1
 
@@ -24,7 +24,6 @@ enum {
 } typedef direction;
 
 enum {
-	EMPTY,
 	RED_VIRUS,
 	BLUE_VIRUS,
 	YELLOW_VIRUS,
@@ -43,29 +42,33 @@ struct {
 } typedef cell;
 
 struct {
-	entity_type type_left;
-	entity_type type_right;
+	entity* left;
+	entity* right;
 	int pos_x[2];
 	int pos_y[2];
 	bool has_moved;
 } typedef pill;
 
-int get_random_integer(int i) {
+int get_random_integer(int i) 
+{
 	return rand() % i;
 }
 
-SDL_Rect* get_rect(cell c) {
+SDL_Rect* get_rect(cell c) 
+{
 	return &c.c_entity->rect;
 }
 
-void set_grid_position_rect(SDL_Rect* rect, int i, int j) {
+void set_grid_position_rect(SDL_Rect* rect, int i, int j) 
+{
 	rect->x = (WINDOW_WIDTH / 2) - (GRID_ROWS * RECT_SIZE) + (PADDING + RECT_SIZE) * j;
 	rect->y = (WINDOW_HEIGHT / 4) + (PADDING + RECT_SIZE) * i;
 	rect->w = RECT_SIZE;
 	rect->h = RECT_SIZE;
 }
 
-void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities) {
+void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities) 
+{
 	int entity_count = 0;
 	int random_i;
 	for (int i = 0; i < GRID_ROWS; i++)
@@ -74,13 +77,12 @@ void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities) {
 		{	
 			if (i > GRID_ROW_CLEARANCE) 
 			{
-				if (entity_count < ENTITY_N)
+				if (entity_count < VIRUS_N)
 				{
-					random_i = get_random_integer(10);
+					random_i = get_random_integer(5);
 					if (random_i == 0) {
 						grid[i][j].c_entity = NULL;
 					}
-
 					else {
 						grid[i][j].c_entity = &entities[entity_count];
 						set_grid_position_rect(&grid[i][j].c_entity->rect, i, j);
@@ -97,18 +99,18 @@ void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities) {
 			
 		}
 	}
-	printf("entity count: %d\n", entity_count);
+	printf("in func, init_grid()\nentities set to grid: %d\n", entity_count);
 }
 
-
-
-SDL_Rect create_rect() {
+SDL_Rect create_rect() 
+{
 	#define DEFAULT_POS 0	
 	SDL_Rect rect = { DEFAULT_POS + (PADDING + RECT_SIZE), DEFAULT_POS + (PADDING + RECT_SIZE), RECT_SIZE, RECT_SIZE};
 	return rect;
 }
 
-int check_adjacent_entities(entity entities[GRID_ROWS][GRID_COLUMNS], int i, int j, entity_type t_type) {
+int check_adjacent_entities(entity entities[GRID_ROWS][GRID_COLUMNS], int i, int j, entity_type t_type) 
+{
 	if (i > 2) 
 	{
 		if (entities[i-1][j].type == t_type && entities[i-2][j].type == t_type) {
@@ -118,26 +120,20 @@ int check_adjacent_entities(entity entities[GRID_ROWS][GRID_COLUMNS], int i, int
 	return 0;
 }
 
-entity create_entity(entity_type e_type, SDL_Rect rect) {
-	switch (e_type) {
-		case EMPTY:
-			return (entity) { EMPTY };
-		case RED_VIRUS:
-			return (entity) { RED_VIRUS, rect };
-		case BLUE_VIRUS:
-			return (entity) { BLUE_VIRUS, rect };
-		case YELLOW_VIRUS:
-			return (entity) { YELLOW_VIRUS, rect };
-	}
-	return;
-}
-entity* init_entities() {
+entity* init_entities(int mode, int n_entities) 
+{	/*	
+		@param int mode : 0 or 3. Determines which range of types to create. Virus or Block.
+	*/
 	int RED_COUNT = 0, BLUE_COUNT = 0, YELLOW_COUNT = 0;
-	entity* entities = malloc(sizeof(entity) * ENTITY_N);
+	if (mode != 0 && mode != 3) {
+		printf("Mode was %d, expected 0 or 3.", mode);
+		return -1;
+	}
+	entity* entities = malloc(sizeof(entity) * n_entities);
 	entity_type e_type;
-	for (int i = 0; i < ENTITY_N; i++)
+	for (int i = 0; i < n_entities; i++)
 	{
-		e_type = (rand() % 3) + 1;
+		e_type = (rand() % 3 + mode);
 		switch (e_type) 
 		{
 			case RED_VIRUS:
@@ -156,53 +152,90 @@ entity* init_entities() {
 	return entities;
 }
 
-void render_grid_area(SDL_Renderer* renderer) {
-	SDL_Rect bg_rect;
-	bg_rect.x = WINDOW_WIDTH / 5;
-	bg_rect.y = WINDOW_HEIGHT / 4;
-	bg_rect.w = GRID_COLUMNS * RECT_SIZE + PADDING + 6;
-	bg_rect.h = GRID_ROWS * RECT_SIZE + PADDING + 10;
+void render_character_area(SDL_Renderer* renderer, SDL_Texture* dr_pellet_t) 
+{
+	SDL_Rect area_rect;
+	area_rect.x = WINDOW_WIDTH / 2;
+	area_rect.y = WINDOW_HEIGHT / 3.5;
+	area_rect.w = 200;
+	area_rect.h = 200;
 
-	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-	SDL_SetRenderDrawColor(renderer, 0xd5, 0xab, 0xff, 200);
-	SDL_RenderFillRect(renderer, &bg_rect);
-	SDL_RenderDrawRect(renderer, &bg_rect);
+	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 200);
+	SDL_RenderFillRect(renderer, &area_rect);
+	SDL_RenderDrawRect(renderer, &area_rect);
 
 	// White Outline
-	SDL_Rect bg_rect1;
-	bg_rect1.x = -1 + WINDOW_WIDTH / 5;
-	bg_rect1.y = -1 + WINDOW_HEIGHT / 4;
-	bg_rect1.w = GRID_COLUMNS * RECT_SIZE + PADDING + 6 + 2;
-	bg_rect1.h = GRID_ROWS * RECT_SIZE + PADDING + 10 + 2;
+	SDL_Rect outline_rect;
+	outline_rect.x = -1 + WINDOW_WIDTH / 2;
+	outline_rect.y = -1 + WINDOW_HEIGHT / 3.5;
+	outline_rect.w = 200 + 2;
+	outline_rect.h = 200 + 2;
 
 	SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 255);
-	SDL_RenderDrawRect(renderer, &bg_rect1);
+	SDL_RenderDrawRect(renderer, &outline_rect);
 
+	SDL_Rect character_rect;
+	character_rect.x = 60 + WINDOW_WIDTH / 2;
+	character_rect.y = 20 + WINDOW_HEIGHT / 3.5;
+	character_rect.w = 40 * 2;
+	character_rect.h = 86 * 2;
+
+	SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0);
+	SDL_RenderDrawRect(renderer, &character_rect);
+
+	SDL_RenderCopy(renderer, dr_pellet_t, NULL, &character_rect);
 }
 
-void render_bg(SDL_Renderer* renderer) {
+void render_grid_area(SDL_Renderer* renderer) 
+{
+	SDL_Rect grid_rect;
+	grid_rect.x = WINDOW_WIDTH / 5;
+	grid_rect.y = WINDOW_HEIGHT / 4;
+	grid_rect.w = GRID_COLUMNS * RECT_SIZE + PADDING + 6;
+	grid_rect.h = GRID_ROWS * RECT_SIZE + PADDING + 10;
+
+	SDL_SetRenderDrawColor(renderer, 0x00, 0x0, 0x00, 200);
+	SDL_RenderFillRect(renderer, &grid_rect);
+	SDL_RenderDrawRect(renderer, &grid_rect);
+
+	// White Outline
+	SDL_Rect outline_rect;
+	outline_rect.x = -1 + WINDOW_WIDTH / 5;
+	outline_rect.y = -1 + WINDOW_HEIGHT / 4;
+	outline_rect.w = GRID_COLUMNS * RECT_SIZE + PADDING + 6 + 2;
+	outline_rect.h = GRID_ROWS * RECT_SIZE + PADDING + 10 + 2;
+
+	SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 255);
+	SDL_RenderDrawRect(renderer, &outline_rect);
+	
+}
+
+void render_bg(SDL_Renderer* renderer) 
+{
 	for (int i = 0; i <= WINDOW_HEIGHT / RECT_SIZE; i++)
 	{
 		for (int j = 0; j <= WINDOW_WIDTH / RECT_SIZE; j++)
 		{
 			SDL_Rect bg_rect = create_rect();
-			bg_rect.x = -16 + RECT_SIZE * j;
+			bg_rect.x = ( -16 + RECT_SIZE * j);
 			bg_rect.y = -2 + RECT_SIZE * i;
 			bg_rect.w = RECT_SIZE;
 			bg_rect.h = RECT_SIZE;
 
-			if (j % 2 == 0) {
-
+			if (j % 2 == 0) 
+			{
 				SDL_SetRenderDrawColor(renderer, 0x8b, 0xb4, 0xd9, 255);
 				SDL_RenderFillRect(renderer, &bg_rect);
 				SDL_RenderDrawRect(renderer, &bg_rect);
 			}
-			else if (i % 2 == 0) {
+			else if (i % 2 == 0) 
+			{
 				SDL_SetRenderDrawColor(renderer, 0x8b, 0xb4, 0xd9, 255);
 				SDL_RenderFillRect(renderer, &bg_rect);
 				SDL_RenderDrawRect(renderer, &bg_rect);
 			}
-			else {
+			else 
+			{
 				SDL_SetRenderDrawColor(renderer, 0x8b, 0xd9, 0xd2, 255);
 				SDL_RenderFillRect(renderer, &bg_rect);
 				SDL_RenderDrawRect(renderer, &bg_rect);
@@ -216,13 +249,17 @@ int main(int argc, char** argv)
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_Window* window = SDL_CreateWindow(TITLE ,SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
 	SDL_Event event;
 	
 	srand(time(NULL));  
 
-	entity* entities = init_entities();
+	entity* entities_v = init_entities(0, VIRUS_N);
+	entity* entities_p = init_entities(3, 128 * 2);
+
 	cell grid[GRID_ROWS][GRID_COLUMNS];
-	init_grid(grid, entities);
+	init_grid(grid, entities_v);
 
 	SDL_Surface* red_block_bmp = SDL_LoadBMP("red_block.bmp");
 	SDL_Texture* red_block_t = SDL_CreateTextureFromSurface(renderer, red_block_bmp);
@@ -240,21 +277,33 @@ int main(int argc, char** argv)
 	SDL_Texture* bg_t = SDL_CreateTextureFromSurface(renderer, bg_bmp);
 	SDL_FreeSurface(bg_bmp);
 
-	direction dir_x = NEUTRAL;
-	int gravity = 1;
-	pill p1 = { BLUE_VIRUS , YELLOW_VIRUS};
-	p1.has_moved = false;
+	SDL_Surface* dr_pellet_bmp = SDL_LoadBMP("dr_pellet.bmp");
+	SDL_Texture* dr_pellet_t = SDL_CreateTextureFromSurface(renderer, dr_pellet_bmp);
+	SDL_FreeSurface(dr_pellet_bmp);
+
+	uint32_t previous_time = SDL_GetTicks();
+	uint32_t current_time;
+	float delta_time;
+	float step_time = 0;
+
+	int bg_animate = 0;
+
 	bool quit = false;
 	while (!quit)
 	{
+		current_time = SDL_GetTicks();
+		delta_time = (current_time - previous_time) / 1000.0f;
+		
+		step_time += delta_time;
+
 		while (SDL_PollEvent(&event))
 		{	
 			if (event.key.keysym.sym == SDLK_LEFT) {
-				dir_x = LEFT;
+				// dir_x = LEFT;
 			}
 
 			if (event.key.keysym.sym == SDLK_RIGHT) {
-				dir_x = RIGHT;
+				// dir_x = RIGHT;
 			}
 
 			if (event.type == SDL_QUIT) {
@@ -262,14 +311,26 @@ int main(int argc, char** argv)
 			}
 		}
 
-		// Logic
 
+		// Logic
+		for (int i = 0; i < GRID_ROWS; i++)
+		{
+			for (int j = 0; j < GRID_COLUMNS; j++)
+			{
+				if (step_time > 1) {
+					printf("%f\n", step_time);
+					step_time = 0;
+				}
+			}
+		}
 		// Rendering
 		SDL_RenderClear(renderer);
 		
-		render_bg(renderer);
+		render_bg(renderer, delta_time, &bg_animate);
 
 		render_grid_area(renderer);
+
+		render_character_area(renderer, dr_pellet_t);
 
 		for (int i = 0; i < GRID_ROWS; i++) 
 		{
@@ -294,6 +355,8 @@ int main(int argc, char** argv)
 		
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 		SDL_RenderPresent(renderer);
+
+		previous_time = current_time;
 	}
 
 	return 0;
