@@ -298,7 +298,6 @@ int main(int argc, char** argv)
 
 	direction dir_x = NEUTRAL;
 	bool left_has_moved = false;
-	bool right_has_moved = false;
 
 	bool quit = false;
 	while (!quit)
@@ -317,11 +316,11 @@ int main(int argc, char** argv)
 				step_limit = 1;
 			}
 
-			if (event.key.keysym.sym == SDLK_LEFT) {
+			if (event.key.keysym.sym == SDLK_LEFT && event.key.state == SDL_PRESSED) {
 				dir_x = LEFT;
 			}
 
-			if (event.key.keysym.sym == SDLK_RIGHT) {
+			if (event.key.keysym.sym == SDLK_RIGHT && event.key.state == SDL_PRESSED) {
 				dir_x = RIGHT;
 			}
 
@@ -336,36 +335,45 @@ int main(int argc, char** argv)
 		{
 			if (dir_x == LEFT) 
 			{
-				if (pl.column + dir_x >= 0) 
+				if (!grid[pl.row][pl.column + dir_x].c_entity) 
 				{
-					grid[pl.row][pl.column + dir_x].c_entity = grid[pl.row][pl.column].c_entity;
-					grid[pl.row][pl.column + dir_x + 1].c_entity = grid[pl.row][pl.column + 1].c_entity;
-					set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x]), pl.row, pl.column + dir_x);
-					set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x + 1]), pl.row, pl.column + dir_x + 1);
-					grid[pl.row][pl.column + 1].c_entity = NULL;
-					pl.column += dir_x;
+					if (pl.column + dir_x >= 0)
+					{
+						grid[pl.row][pl.column + dir_x].c_entity = grid[pl.row][pl.column].c_entity;
+						grid[pl.row][pl.column + dir_x + 1].c_entity = grid[pl.row][pl.column + 1].c_entity;
+						set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x]), pl.row, pl.column + dir_x);
+						set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x + 1]), pl.row, pl.column + dir_x + 1);
+						grid[pl.row][pl.column + 1].c_entity = NULL;
+						pl.column += dir_x;
+
+					}
 				}
 			}
 
 			if (dir_x == RIGHT) 
 			{
-				if (pl.column + dir_x < GRID_COLUMNS - 1) 
+				if (!grid[pl.row][pl.column + dir_x + 1].c_entity) 
 				{
-					grid[pl.row][pl.column + dir_x + 1].c_entity = grid[pl.row][pl.column + 1].c_entity;
-					grid[pl.row][pl.column + dir_x].c_entity = grid[pl.row][pl.column].c_entity;
-					set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x]), pl.row, pl.column + dir_x);
-					set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x + 1]), pl.row, pl.column + dir_x + 1);
-					grid[pl.row][pl.column].c_entity = NULL;
-					pl.column += dir_x;
+					if (pl.column + dir_x < GRID_COLUMNS - 1)
+					{
+						grid[pl.row][pl.column + 1 + dir_x].c_entity = grid[pl.row][pl.column + 1].c_entity;
+						grid[pl.row][pl.column + dir_x].c_entity = grid[pl.row][pl.column].c_entity;
+						set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x + 1]), pl.row, pl.column + dir_x + 1);
+						set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x]), pl.row, pl.column + dir_x);
+						grid[pl.row][pl.column].c_entity = NULL;
+						pl.column += dir_x;
+					}
 				}
 			}
 			printf("%d\n", pl.column);
 			dir_x = NEUTRAL;
 		}
-
+		
 		// Gravity is applied here.
 		if (step_time > step_limit)
 		{
+			set_grid_position_rect(get_rect(grid[pl.row][pl.column]), pl.row, pl.column); // Fix janky looking movement?
+			set_grid_position_rect(get_rect(grid[pl.row][pl.column]), pl.row, pl.column);
 			for (int i = 0; i < GRID_ROWS; i++)
 			{
 				for (int j = 0; j < GRID_COLUMNS; j++)
@@ -429,7 +437,6 @@ int main(int argc, char** argv)
 		
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 		SDL_RenderPresent(renderer);
-
 		previous_time = current_time;
 	}
 	return 0;
