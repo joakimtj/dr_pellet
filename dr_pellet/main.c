@@ -44,9 +44,8 @@ struct {
 struct {
 	entity* left;
 	entity* right;
-	int pos_x[2];
-	int pos_y[2];
-	bool has_moved;
+	int row;
+	int column;
 } typedef pill;
 
 int get_random_integer(int i) 
@@ -247,20 +246,27 @@ void render_bg(SDL_Renderer* renderer)
 int main(int argc, char** argv)
 {
 	SDL_Init(SDL_INIT_VIDEO);
-	SDL_Window* window = SDL_CreateWindow(TITLE ,SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
+	SDL_Window* window = SDL_CreateWindow(TITLE, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
 	SDL_Event event;
-	
-	srand(time(NULL));  
+
+	srand(time(NULL));
 
 	entity* entities_v = init_entities(0, VIRUS_N);
-	entity* entities_p = init_entities(3, 128 * 2);
+	entity* entities_p = init_entities(0, 128 * 2);
 
 	cell grid[GRID_ROWS][GRID_COLUMNS];
 	init_grid(grid, entities_v);
 
+	pill pl = { &entities_p[0], &entities_p[1], 0, 0};
+
+	grid[0][0].c_entity = pl.left;
+	grid[0][1].c_entity = pl.right;
+
+	set_grid_position_rect(get_rect(grid[0][0]), 0, 0);
+	set_grid_position_rect(get_rect(grid[0][1]), 0, 1);
 	SDL_Surface* red_block_bmp = SDL_LoadBMP("red_block.bmp");
 	SDL_Texture* red_block_t = SDL_CreateTextureFromSurface(renderer, red_block_bmp);
 	SDL_FreeSurface(red_block_bmp);
@@ -284,9 +290,15 @@ int main(int argc, char** argv)
 	uint32_t previous_time = SDL_GetTicks();
 	uint32_t current_time;
 	float delta_time;
+
 	float step_time = 0;
+	float step_limit = 1;
 
 	int bg_animate = 0;
+
+	direction dir_x = NEUTRAL;
+	bool left_has_moved = false;
+	bool right_has_moved = false;
 
 	bool quit = false;
 	while (!quit)
@@ -298,12 +310,19 @@ int main(int argc, char** argv)
 
 		while (SDL_PollEvent(&event))
 		{	
+			if (event.key.keysym.sym == SDLK_s) {
+				step_limit = 0.5;
+			}
+			else {
+				step_limit = 1;
+			}
+
 			if (event.key.keysym.sym == SDLK_LEFT) {
-				// dir_x = LEFT;
+				dir_x = LEFT;
 			}
 
 			if (event.key.keysym.sym == SDLK_RIGHT) {
-				// dir_x = RIGHT;
+				dir_x = RIGHT;
 			}
 
 			if (event.type == SDL_QUIT) {
@@ -313,16 +332,71 @@ int main(int argc, char** argv)
 
 
 		// Logic
-		for (int i = 0; i < GRID_ROWS; i++)
+		if (dir_x) 
 		{
-			for (int j = 0; j < GRID_COLUMNS; j++)
+			if (dir_x == LEFT) 
 			{
-				if (step_time > 1) {
-					printf("%f\n", step_time);
-					step_time = 0;
+				if (pl.column + dir_x >= 0) 
+				{
+					grid[pl.row][pl.column + dir_x].c_entity = grid[pl.row][pl.column].c_entity;
+					grid[pl.row][pl.column + dir_x + 1].c_entity = grid[pl.row][pl.column + 1].c_entity;
+					set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x]), pl.row, pl.column + dir_x);
+					set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x + 1]), pl.row, pl.column + dir_x + 1);
+					grid[pl.row][pl.column + 1].c_entity = NULL;
+					pl.column += dir_x;
+				}
+			}
+
+			if (dir_x == RIGHT) 
+			{
+				if (pl.column + dir_x < GRID_COLUMNS - 1) 
+				{
+					grid[pl.row][pl.column + dir_x + 1].c_entity = grid[pl.row][pl.column + 1].c_entity;
+					grid[pl.row][pl.column + dir_x].c_entity = grid[pl.row][pl.column].c_entity;
+					set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x]), pl.row, pl.column + dir_x);
+					set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x + 1]), pl.row, pl.column + dir_x + 1);
+					grid[pl.row][pl.column].c_entity = NULL;
+					pl.column += dir_x;
+				}
+			}
+			printf("%d\n", pl.column);
+			dir_x = NEUTRAL;
+		}
+
+		// Gravity is applied here.
+		if (step_time > step_limit)
+		{
+			for (int i = 0; i < GRID_ROWS; i++)
+			{
+				for (int j = 0; j < GRID_COLUMNS; j++)
+				{
+					if (pl.left == grid[i][j].c_entity && !left_has_moved) {
+						if (grid[i + 1][j].c_entity || grid[i + 1][j + 1].c_entity) {
+							printf("Collision at grid[%d][%d]\n", i + 1, j);
+							break;
+						}
+						else {
+							puts("pl - left");
+							grid[i + 1][j].c_entity = grid[i][j].c_entity;
+							pl.left = grid[i + 1][j].c_entity;
+							pl.row = i + 1;
+							set_grid_position_rect(get_rect(grid[i + 1][j]), i + 1, j);
+							grid[i][j].c_entity = NULL;
+							left_has_moved = true;
+								
+							puts("pl - right");
+							grid[i + 1][j + 1].c_entity = grid[i][j + 1].c_entity;
+							pl.right = grid[i + 1][j + 1].c_entity;
+							set_grid_position_rect(get_rect(grid[i + 1][j + 1]), i + 1, j + 1);
+							grid[i][j + 1].c_entity = NULL;
+						}
+					}		
 				}
 			}
 		}
+		if (step_time > step_limit) step_time = 0;
+		left_has_moved = false;
+
 		// Rendering
 		SDL_RenderClear(renderer);
 		
@@ -358,6 +432,5 @@ int main(int argc, char** argv)
 
 		previous_time = current_time;
 	}
-
 	return 0;
 }
