@@ -18,6 +18,13 @@
 #define PADDING 1
 
 enum {
+	SLOW,
+	NORMAL,
+	FAST,
+	VERY_FAST
+} typedef speed;
+
+enum {
 	LEFT = -1,
 	NEUTRAL = 0,
 	RIGHT = 1
@@ -39,13 +46,18 @@ struct {
 
 struct {
 	entity* c_entity;
+	bool is_player;
 } typedef cell;
 
 struct {
-	entity* left;
-	entity* right;
+	entity* h_entity;
 	int row;
 	int column;
+} typedef half;
+
+struct {
+	half left;
+	half right;
 	bool active;
 } typedef pill;
 
@@ -96,7 +108,7 @@ void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities)
 			else {
 				grid[i][j].c_entity = NULL;
 			}
-			
+			grid[i][j].is_player = false;
 		}
 	}
 	printf("in func, init_grid()\nentities set to grid: %d\n", entity_count);
@@ -261,14 +273,19 @@ int main(int argc, char** argv)
 	cell grid[GRID_ROWS][GRID_COLUMNS];
 	init_grid(grid, entities_v);
 
-	pill pl = { &entities_p[0], &entities_p[1], 0, 0, true};
+	half left = { &entities_p[0], 0, 5 };
+	half right = { &entities_p[1], 0, 6 };
+
+	pill pl = { left, right, true};
 	int pill_count = 2;
 
-	grid[0][0].c_entity = pl.left;
-	grid[0][1].c_entity = pl.right;
+	grid[pl.left.row][pl.left.column].c_entity = pl.left.h_entity;
+	grid[pl.right.row][pl.right.column].c_entity = pl.right.h_entity;
+	grid[pl.left.row][pl.left.column].is_player = true;
+	grid[pl.right.row][pl.right.column].is_player = true;
+	set_grid_position_rect(get_rect(grid[pl.left.row][pl.left.column]), pl.left.row, pl.left.column);
+	set_grid_position_rect(get_rect(grid[pl.right.row][pl.right.column]), pl.right.row, pl.right.column);
 
-	set_grid_position_rect(get_rect(grid[0][0]), 0, 0);
-	set_grid_position_rect(get_rect(grid[0][1]), 0, 1);
 	SDL_Surface* red_block_bmp = SDL_LoadBMP("red_block.bmp");
 	SDL_Texture* red_block_t = SDL_CreateTextureFromSurface(renderer, red_block_bmp);
 	SDL_FreeSurface(red_block_bmp);
@@ -294,12 +311,14 @@ int main(int argc, char** argv)
 	float delta_time;
 
 	float step_time = 0;
-	float step_limit = 1;
+	float step_limit = 0.25;
 
 	bool disable_ghost = false;
 
+	speed fall_speed = NORMAL;
+
 	direction dir_x = NEUTRAL;
-	bool left_has_moved = false;
+	bool pill_has_moved = false;
 
 	bool quit = false;
 	while (!quit)
@@ -311,11 +330,22 @@ int main(int argc, char** argv)
 
 		while (SDL_PollEvent(&event))
 		{	
-			if (event.key.keysym.sym == SDLK_s) {
-				step_limit = 0.5;
+			if (event.key.keysym.sym == SDLK_UP && event.key.state == SDL_PRESSED) {
+				// I gotta implement the fucking flipping too......
 			}
-			else {
-				step_limit = 1;
+
+			if (event.key.keysym.sym == SDLK_DOWN && event.key.state == SDL_PRESSED) {
+				switch (fall_speed) 
+				{
+					case NORMAL:
+						step_limit = 0.5;
+						fall_speed = SLOW;
+						break;
+					case SLOW:
+						step_limit = 1;
+						fall_speed = NORMAL;
+						break;
+				}
 			}
 
 			if (event.key.keysym.sym == SDLK_LEFT && event.key.state == SDL_PRESSED) {
@@ -329,12 +359,12 @@ int main(int argc, char** argv)
 			if (event.key.keysym.sym == SDLK_g && event.key.state == SDL_PRESSED) {
 				switch (disable_ghost)
 				{
-				case true:
-					disable_ghost = false;
-					break;
-				case false:
-					disable_ghost = true;
-					break;
+					case true:
+						disable_ghost = false;
+						break;
+					case false:
+						disable_ghost = true;
+						break;
 				}
 			}
 
@@ -347,92 +377,148 @@ int main(int argc, char** argv)
 		// Logic
 
 		// Sets new active pill
-		if (!pl.active) {
+		if (!pl.active) 
+		{
 			pill_count += 2;
-			pl.row = 0;
-			pl.left = &entities_p[pill_count];
-			pl.right = &entities_p[pill_count + 1];
-			grid[pl.row][pl.column].c_entity = pl.left;
-			grid[pl.row][pl.column + 1].c_entity = pl.right;
-			set_grid_position_rect(get_rect(grid[pl.row][pl.column]), pl.row, pl.column);
-			set_grid_position_rect(get_rect(grid[pl.row][pl.column + 1]), pl.row, pl.column + 1);
+
+			grid[pl.left.row][pl.left.column].is_player = false;
+			grid[pl.right.row][pl.right.column].is_player = false;
+
+			pl.left.row = 0;
+			pl.right.row = 0;
+
+			pl.left.h_entity = &entities_p[pill_count];
+			pl.right.h_entity = &entities_p[pill_count + 1];
+
+			grid[pl.left.row][pl.left.column].c_entity = pl.left.h_entity;
+			grid[pl.right.row][pl.right.column].c_entity = pl.right.h_entity;
+
+			grid[pl.left.row][pl.left.column].is_player = true;
+			grid[pl.right.row][pl.right.column].is_player = true;
+
+			set_grid_position_rect(get_rect(grid[pl.left.row][pl.left.column]), pl.left.row, pl.left.column); // Might improve the look of side-movement at or near step_limit
+			set_grid_position_rect(get_rect(grid[pl.right.row][pl.right.column]), pl.right.row, pl.right.column);
+
 			pl.active = true;
 		}
 
-		// Horizontal movement
 		if (dir_x) 
 		{
+			entity* tmp_1 = pl.left.h_entity;
+			entity* tmp_2 = pl.right.h_entity;
+
 			if (dir_x == LEFT) 
 			{
-				if (!grid[pl.row][pl.column + dir_x].c_entity) 
+				if ((grid[pl.left.row][pl.left.column + LEFT].c_entity) && !(grid[pl.left.row][pl.left.column + LEFT].is_player) || (grid[pl.right.row][pl.right.column + LEFT].c_entity) && !(grid[pl.right.row][pl.right.column + LEFT].is_player))
 				{
-					if (pl.column + dir_x >= 0)
+					puts("Collision");
+				}
+				else 
+				{
+					if (pl.left.column + dir_x >= 0 && pl.right.column + dir_x >= 0)
 					{
-						grid[pl.row][pl.column + dir_x].c_entity = grid[pl.row][pl.column].c_entity;
-						grid[pl.row][pl.column + dir_x + 1].c_entity = grid[pl.row][pl.column + 1].c_entity;
-						set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x]), pl.row, pl.column + dir_x);
-						set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x + 1]), pl.row, pl.column + dir_x + 1);
-						grid[pl.row][pl.column + 1].c_entity = NULL;
-						pl.column += dir_x;
+						grid[pl.left.row][pl.left.column].is_player = false;
+						grid[pl.right.row][pl.right.column].is_player = false;
+
+						grid[pl.left.row][pl.left.column].c_entity = NULL;
+						grid[pl.right.row][pl.right.column].c_entity = NULL;
+
+						grid[pl.left.row][pl.left.column + LEFT].is_player = true;
+						grid[pl.right.row][pl.right.column + LEFT].is_player = true;
+
+						grid[pl.left.row][pl.left.column + LEFT].c_entity = tmp_1;
+						grid[pl.right.row][pl.right.column + LEFT].c_entity = tmp_2;
+
+						pl.left.h_entity = tmp_1;
+						pl.right.h_entity = tmp_2;
+
+						pl.left.column--;
+						pl.right.column--;
+
+						set_grid_position_rect(get_rect(grid[pl.left.row][pl.left.column]), pl.left.row, pl.left.column); // Might improve the look of side-movement at or near step_limit
+						set_grid_position_rect(get_rect(grid[pl.right.row][pl.right.column]), pl.right.row, pl.right.column);
 
 					}
 				}
 			}
-
-			if (dir_x == RIGHT) 
+			if (dir_x == RIGHT)
 			{
-				if (!grid[pl.row][pl.column + dir_x + 1].c_entity) 
+				if ((grid[pl.left.row][pl.left.column + RIGHT].c_entity) && !(grid[pl.left.row][pl.left.column + RIGHT].is_player) || (grid[pl.right.row][pl.right.column + RIGHT].c_entity) && !(grid[pl.right.row][pl.right.column + RIGHT].is_player))
 				{
-					if (pl.column + dir_x < GRID_COLUMNS - 1)
+					puts("Collision");
+				}
+				else
+				{
+					if (pl.left.column + dir_x < GRID_COLUMNS && pl.right.column + dir_x < GRID_COLUMNS)
 					{
-						grid[pl.row][pl.column + 1 + dir_x].c_entity = grid[pl.row][pl.column + 1].c_entity;
-						grid[pl.row][pl.column + dir_x].c_entity = grid[pl.row][pl.column].c_entity;
-						set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x + 1]), pl.row, pl.column + dir_x + 1);
-						set_grid_position_rect(get_rect(grid[pl.row][pl.column + dir_x]), pl.row, pl.column + dir_x);
-						grid[pl.row][pl.column].c_entity = NULL;
-						pl.column += dir_x;
+						grid[pl.left.row][pl.left.column].is_player = false;
+						grid[pl.right.row][pl.right.column].is_player = false;
+
+						grid[pl.left.row][pl.left.column].c_entity = NULL;
+						grid[pl.right.row][pl.right.column].c_entity = NULL;
+
+						grid[pl.left.row][pl.left.column + RIGHT].is_player = true;
+						grid[pl.right.row][pl.right.column + RIGHT].is_player = true;
+
+						grid[pl.left.row][pl.left.column + RIGHT].c_entity = tmp_1;
+						grid[pl.right.row][pl.right.column + RIGHT].c_entity = tmp_2;
+
+						pl.left.h_entity = tmp_1;
+						pl.right.h_entity = tmp_2;
+
+						pl.left.column++;
+						pl.right.column++;
+
+						set_grid_position_rect(get_rect(grid[pl.left.row][pl.left.column]), pl.left.row, pl.left.column); // Might improve the look of side-movement at or near step_limit
+						set_grid_position_rect(get_rect(grid[pl.right.row][pl.right.column]), pl.right.row, pl.right.column);
+
 					}
 				}
 			}
-			printf("%d\n", pl.column);
 			dir_x = NEUTRAL;
 		}
-		
 		// Gravity is applied here.
+
+
 		if (step_time > step_limit)
 		{
-			set_grid_position_rect(get_rect(grid[pl.row][pl.column]), pl.row, pl.column); // Might improve the look of side-movement at step_limit
-			set_grid_position_rect(get_rect(grid[pl.row][pl.column]), pl.row, pl.column);
-			for (int i = 0; i < GRID_ROWS; i++)
+			set_grid_position_rect(get_rect(grid[pl.left.row][pl.left.column]), pl.left.row, pl.left.column); // Might improve the look of side-movement at or near step_limit
+			set_grid_position_rect(get_rect(grid[pl.right.row][pl.right.column]), pl.right.row, pl.right.column);
+
+			entity* tmp_1 = pl.left.h_entity;
+			entity* tmp_2 = pl.right.h_entity;
+
+			if ((grid[pl.left.row + 1][pl.left.column].c_entity) && !(grid[pl.left.row + 1][pl.left.column].is_player) || (grid[pl.right.row + 1][pl.right.column].c_entity) && !(grid[pl.right.row + 1][pl.right.column].is_player))
 			{
-				for (int j = 0; j < GRID_COLUMNS; j++)
-				{
-					if (pl.left == grid[i][j].c_entity && !left_has_moved) {
-						if (grid[i + 1][j].c_entity || grid[i + 1][j + 1].c_entity) {
-							printf("Collision at grid[%d][%d]\n", i + 1, j);
-							pl.active = false;
-						}
-						else {
-							puts("pl - left");
-							grid[i + 1][j].c_entity = grid[i][j].c_entity;
-							pl.left = grid[i + 1][j].c_entity;
-							pl.row += 1;
-							set_grid_position_rect(get_rect(grid[i + 1][j]), i + 1, j);
-							grid[i][j].c_entity = NULL;
-							left_has_moved = true;
-								
-							puts("pl - right");
-							grid[i + 1][j + 1].c_entity = grid[i][j + 1].c_entity;
-							pl.right = grid[i + 1][j + 1].c_entity;
-							set_grid_position_rect(get_rect(grid[i + 1][j + 1]), i + 1, j + 1);
-							grid[i][j + 1].c_entity = NULL;
-						}
-					}		
-				}
+					pl.active = false;
+					printf("Collision.\n");
+			}
+			else 
+			{
+				grid[pl.left.row][pl.left.column].is_player = false;
+				grid[pl.right.row][pl.right.column].is_player = false;
+
+				grid[pl.left.row][pl.left.column].c_entity = NULL;
+				grid[pl.right.row][pl.right.column].c_entity = NULL;
+
+				grid[pl.left.row + 1][pl.left.column].is_player = true;
+				grid[pl.right.row + 1][pl.right.column].is_player = true;
+
+				grid[pl.left.row + 1][pl.left.column].c_entity = tmp_1;
+				grid[pl.right.row + 1][pl.right.column].c_entity = tmp_2;
+
+				pl.left.h_entity = tmp_1;
+				pl.right.h_entity = tmp_2;
+
+				pl.left.row++;
+				pl.right.row++;
+
+				set_grid_position_rect(get_rect(grid[pl.left.row][pl.left.column]), pl.left.row, pl.left.column); // Might improve the look of side-movement at or near step_limit
+				set_grid_position_rect(get_rect(grid[pl.right.row][pl.right.column]), pl.right.row, pl.right.column);
 			}
 		}
 		if (step_time > step_limit) step_time = 0;
-		left_has_moved = false;
+		pill_has_moved = false;
 
 		// Rendering
 		SDL_RenderClear(renderer);
@@ -448,28 +534,7 @@ int main(int argc, char** argv)
 		{
 			for (int j = 0; j < GRID_COLUMNS; j++) 
 			{
-				if (i != pl.row - 1 && !disable_ghost)
-				{
-					if (!render_ghost)
-					{
-						if (grid[i + 1][pl.column].c_entity || grid[i + 1][pl.column + 1].c_entity)
-						{
-							if (j == pl.column)
-							{
-								SDL_Rect ghost_piece;
-								ghost_piece.x = (WINDOW_WIDTH / 2) - (GRID_ROWS * RECT_SIZE) + (PADDING + RECT_SIZE) * j;
-								ghost_piece.y = (WINDOW_HEIGHT / 4) + (PADDING + RECT_SIZE) * i;
-								ghost_piece.w = RECT_SIZE * 2;
-								ghost_piece.h = RECT_SIZE;
-								SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 200);
-								SDL_RenderDrawRect(renderer, &ghost_piece);
-								render_ghost = true;
-							}
-
-						}
-					}
-				}
-
+				// Virus greier 
 				if (grid[i][j].c_entity != NULL) 
 				{	
 					if (grid[i][j].c_entity->type == RED_VIRUS) {
