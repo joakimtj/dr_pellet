@@ -172,7 +172,7 @@ entity* init_entities(int mode, int n_entities)
 	*/
 	int RED_COUNT = 0, BLUE_COUNT = 0, YELLOW_COUNT = 0;
 	if (mode != 0 && mode != 3) {
-		printf("Mode was %d, expected 0 or 3.", mode);
+		printf("Mode was %d, expected 0 or 3.+\n", mode);
 		return -1;
 	}
 	entity* entities = malloc(sizeof(entity) * n_entities);
@@ -332,10 +332,18 @@ int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot)
 	if (pl->left.row + row_axis_l < 0 || pl->right.row + row_axis_r < 0) {
 		return -1;
 	}
-	else if (pl->left.column + column_axis_l >= GRID_COLUMNS - 1 && pl->right.column + column_axis_r >= GRID_COLUMNS - 1) {
-		return -1;
-	}
 	else {
+		if (pl->left.column + column_axis_l >= GRID_COLUMNS - 1 && pl->right.column + column_axis_r >= GRID_COLUMNS - 1) {
+			column_axis_l--;
+			column_axis_r--;
+		}
+
+		if ((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player) ||
+			(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player))
+		{
+			return -1;
+		}
+
 		grid[pl->left.row][pl->left.column].is_player = false;
 		grid[pl->right.row][pl->right.column].is_player = false;
 
@@ -376,8 +384,8 @@ int main(int argc, char** argv)
 	cell grid[GRID_ROWS][GRID_COLUMNS];
 	init_grid(grid, entities_v);
 
-	half left = { &entities_p[0], 0, 6 };
-	half right = { &entities_p[1], 0, 7 };
+	half left = { &entities_p[0], 0, 3 };
+	half right = { &entities_p[1], 0, 4 };
 
 	pill pl = { left, right, true};
 	int pill_count = 2;
@@ -421,7 +429,6 @@ int main(int argc, char** argv)
 	bool disable_ghost = false;
 
 	rotation rot = FIRST;
-	bool has_rotated = false;
 
 	speed fall_speed = NORMAL;
 	direction dir_x = NEUTRAL;
@@ -596,7 +603,7 @@ int main(int argc, char** argv)
 			else 
 			{
 				pl.active = false;
-				printf(" Step-time Collision.\n");
+				printf("Step-time Collision.\n");
 			}
 			step_time = 0;
 		}
