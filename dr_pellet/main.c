@@ -25,6 +25,13 @@ enum {
 } typedef speed;
 
 enum {
+	FIRST,
+	SECOND,
+	THIRD,
+	FOURTH
+} typedef rotation;
+
+enum {
 	LEFT = -1,
 	NEUTRAL = 0,
 	RIGHT = 1
@@ -79,12 +86,14 @@ void set_grid_position_rect(SDL_Rect* rect, int i, int j)
 	rect->h = RECT_SIZE;
 }
 
-void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl) {
+void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl) 
+{
 	set_grid_position_rect(get_rect(grid[pl->left.row][pl->left.column]), pl->left.row, pl->left.column); // Might improve the look of side-movement at or near step_limit
 	set_grid_position_rect(get_rect(grid[pl->right.row][pl->right.column]), pl->right.row, pl->right.column);
 }
 
-int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis, int column_axis) {
+int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis, int column_axis) 
+{
 	// Checks if the adjacent node (selected by row_axis and column_axis) is occupied by a cell and if that cell is the player.
 	if ((grid[pl->left.row + row_axis][pl->left.column + column_axis].c_entity) && !(grid[pl->left.row + row_axis][pl->left.column + column_axis].is_player) || 
 		(grid[pl->right.row + row_axis][pl->right.column + column_axis].c_entity) && !(grid[pl->right.row + row_axis][pl->right.column + column_axis].is_player))
@@ -93,11 +102,12 @@ int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_a
 }
 
 
-void move_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis, int column_axis) {
+void move_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis, int column_axis) 
+{
+	// These temporary pointers allows the player blocks to move without respect to any order of operations.
 	entity* tmp_1 = pl->left.h_entity;
 	entity* tmp_2 = pl->right.h_entity;
-	printf("left row: %d left col: %d\n", pl->left.row, pl->left.column);
-	printf("%p\n", grid[pl->left.row][pl->left.column].c_entity);
+	
 	grid[pl->left.row][pl->left.column].is_player = false;
 	grid[pl->right.row][pl->right.column].is_player = false;
 
@@ -303,6 +313,7 @@ int main(int argc, char** argv)
 	pill pl = { left, right, true};
 	int pill_count = 2;
 
+	// Init first player block 
 	grid[pl.left.row][pl.left.column].c_entity = pl.left.h_entity;
 	grid[pl.right.row][pl.right.column].c_entity = pl.right.h_entity;
 	grid[pl.left.row][pl.left.column].is_player = true;
@@ -335,12 +346,14 @@ int main(int argc, char** argv)
 	float delta_time;
 
 	float step_time = 0;
-	float step_limit = 0.25;
+	float step_limit = 2;
 
 	int gravity = 1;
 	bool disable_ghost = false;
 
-	int rotation = 0;
+	rotation rot = FOURTH;
+	bool has_rotated = false;
+
 	speed fall_speed = NORMAL;
 	direction dir_x = NEUTRAL;
 
@@ -349,13 +362,12 @@ int main(int argc, char** argv)
 	{
 		current_time = SDL_GetTicks();
 		delta_time = (current_time - previous_time) / 1000.0f;
-		
 		step_time += delta_time;
 
 		while (SDL_PollEvent(&event))
 		{	
 			if (event.key.keysym.sym == SDLK_UP && event.key.state == SDL_PRESSED) {
-				// I gotta implement the fucking flipping too......
+				// TODO: Rotation
 			}
 
 			if (event.key.keysym.sym == SDLK_DOWN && event.key.state == SDL_PRESSED) {
@@ -405,48 +417,59 @@ int main(int argc, char** argv)
 		{
 			pill_count += 2;
 
+			entity* tmp_1;
+			entity* tmp_2;
+
+			printf("pl.left: x = %d, y = %d\n", pl.left.row, pl.left.column);
+			printf("pl.right: x = %d, y = %d\n", pl.right.row, pl.right.column);
+
 			grid[pl.left.row][pl.left.column].is_player = false;
 			grid[pl.right.row][pl.right.column].is_player = false;
-
-			pl.left.row = 0;
+			
 			pl.right.row = 0;
-
+			pl.left.row = 0;
+			
 			pl.left.h_entity = &entities_p[pill_count];
 			pl.right.h_entity = &entities_p[pill_count + 1];
 
-			grid[pl.left.row][pl.left.column].c_entity = pl.left.h_entity;
-			grid[pl.right.row][pl.right.column].c_entity = pl.right.h_entity;
+			tmp_1 = pl.left.h_entity;
+			tmp_2 = pl.right.h_entity;
 
-			grid[pl.left.row][pl.left.column].is_player = true;
-			grid[pl.right.row][pl.right.column].is_player = true;
+			if (check_cell_collision(grid, &pl, 0, 0)) {
+				quit = true;
+				printf("Oh no... ! You lost !\n");
+			}
+			else {
+			
+				grid[pl.right.row][pl.right.column].c_entity = tmp_2;
+				grid[pl.left.row][pl.left.column].c_entity = tmp_1;
 
-			set_player_position_rect(grid, &pl);
+				printf("pl.left: x = %d, y = %d\n", pl.left.row, pl.left.column);
+				printf("pl.right: x = %d, y = %d\n", pl.right.row, pl.right.column);
 
-			pl.active = true;
-		}
+				grid[pl.left.row][pl.left.column].is_player = true;
+				grid[pl.right.row][pl.right.column].is_player = true;
 
-		if (rotation) 
-		{
+				set_player_position_rect(grid, &pl);
 
+				pl.active = true;
+			}
 		}
 
 		if (dir_x) 
 		{
-
 			if (dir_x == LEFT) 
 			{
 				if (!(check_cell_collision(grid, &pl, 0, LEFT)))
 				{
 					if (pl.left.column + dir_x >= 0 && pl.right.column + dir_x >= 0)
 					{
-
 						move_player(grid, &pl, 0, dir_x);
 
 						pl.left.column--;
 						pl.right.column--;
 
 						set_player_position_rect(grid, &pl);
-
 					}
 				}
 			}
@@ -462,19 +485,16 @@ int main(int argc, char** argv)
 						pl.right.column++;
 
 						set_player_position_rect(grid, &pl);
-
 					}
 				}
 			}
 			dir_x = NEUTRAL;
 		}
+
 		// Gravity is applied here.
-
-
 		if (step_time > step_limit)
 		{
 			set_player_position_rect(grid, &pl);
-
 			if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL)))
 			{
 				move_player(grid, &pl, 1, 0);
@@ -487,10 +507,10 @@ int main(int argc, char** argv)
 			else 
 			{
 				pl.active = false;
-				printf("Collision.\n");
+				printf(" Step-time Collision.\n");
 			}
+			step_time = 0;
 		}
-		if (step_time > step_limit) step_time = 0;
 
 		// Rendering
 		SDL_RenderClear(renderer);
@@ -529,5 +549,9 @@ int main(int argc, char** argv)
 		SDL_RenderPresent(renderer);
 		previous_time = current_time;
 	}
+	free(entities_v);
+	free(entities_p);
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
 	return 0;
 }
