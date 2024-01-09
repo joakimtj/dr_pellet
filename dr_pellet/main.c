@@ -79,6 +79,41 @@ void set_grid_position_rect(SDL_Rect* rect, int i, int j)
 	rect->h = RECT_SIZE;
 }
 
+void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl) {
+	set_grid_position_rect(get_rect(grid[pl->left.row][pl->left.column]), pl->left.row, pl->left.column); // Might improve the look of side-movement at or near step_limit
+	set_grid_position_rect(get_rect(grid[pl->right.row][pl->right.column]), pl->right.row, pl->right.column);
+}
+
+int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis, int column_axis) {
+	// Checks if the adjacent node (selected by row_axis and column_axis) is occupied by a cell and if that cell is the player.
+	if ((grid[pl->left.row + row_axis][pl->left.column + column_axis].c_entity) && !(grid[pl->left.row + row_axis][pl->left.column + column_axis].is_player) || 
+		(grid[pl->right.row + row_axis][pl->right.column + column_axis].c_entity) && !(grid[pl->right.row + row_axis][pl->right.column + column_axis].is_player))
+		return 1;
+	else return 0;
+}
+
+
+void move_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis, int column_axis) {
+	entity* tmp_1 = pl->left.h_entity;
+	entity* tmp_2 = pl->right.h_entity;
+	printf("left row: %d left col: %d\n", pl->left.row, pl->left.column);
+	printf("%p\n", grid[pl->left.row][pl->left.column].c_entity);
+	grid[pl->left.row][pl->left.column].is_player = false;
+	grid[pl->right.row][pl->right.column].is_player = false;
+
+	grid[pl->left.row][pl->left.column].c_entity = NULL;
+	grid[pl->right.row][pl->right.column].c_entity = NULL;
+
+	grid[pl->left.row + row_axis][pl->left.column + column_axis].is_player = true;
+	grid[pl->right.row + row_axis][pl->right.column + column_axis].is_player = true;
+
+	grid[pl->left.row + row_axis][pl->left.column + column_axis].c_entity = tmp_1;
+	grid[pl->right.row + row_axis][pl->right.column + column_axis].c_entity = tmp_2;
+
+	pl->left.h_entity = tmp_1;
+	pl->right.h_entity = tmp_2;
+}
+
 void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities) 
 {
 	int entity_count = 0;
@@ -119,17 +154,6 @@ SDL_Rect create_rect()
 	#define DEFAULT_POS 0	
 	SDL_Rect rect = { DEFAULT_POS + (PADDING + RECT_SIZE), DEFAULT_POS + (PADDING + RECT_SIZE), RECT_SIZE, RECT_SIZE};
 	return rect;
-}
-
-int check_adjacent_entities(entity entities[GRID_ROWS][GRID_COLUMNS], int i, int j, entity_type t_type) 
-{
-	if (i > 2) 
-	{
-		if (entities[i-1][j].type == t_type && entities[i-2][j].type == t_type) {
-			return 1;
-		}
-	}	
-	return 0;
 }
 
 entity* init_entities(int mode, int n_entities) 
@@ -313,12 +337,12 @@ int main(int argc, char** argv)
 	float step_time = 0;
 	float step_limit = 0.25;
 
+	int gravity = 1;
 	bool disable_ghost = false;
 
+	int rotation = 0;
 	speed fall_speed = NORMAL;
-
 	direction dir_x = NEUTRAL;
-	bool pill_has_moved = false;
 
 	bool quit = false;
 	while (!quit)
@@ -396,81 +420,48 @@ int main(int argc, char** argv)
 			grid[pl.left.row][pl.left.column].is_player = true;
 			grid[pl.right.row][pl.right.column].is_player = true;
 
-			set_grid_position_rect(get_rect(grid[pl.left.row][pl.left.column]), pl.left.row, pl.left.column); // Might improve the look of side-movement at or near step_limit
-			set_grid_position_rect(get_rect(grid[pl.right.row][pl.right.column]), pl.right.row, pl.right.column);
+			set_player_position_rect(grid, &pl);
 
 			pl.active = true;
 		}
 
+		if (rotation) 
+		{
+
+		}
+
 		if (dir_x) 
 		{
-			entity* tmp_1 = pl.left.h_entity;
-			entity* tmp_2 = pl.right.h_entity;
 
 			if (dir_x == LEFT) 
 			{
-				if ((grid[pl.left.row][pl.left.column + LEFT].c_entity) && !(grid[pl.left.row][pl.left.column + LEFT].is_player) || (grid[pl.right.row][pl.right.column + LEFT].c_entity) && !(grid[pl.right.row][pl.right.column + LEFT].is_player))
-				{
-					puts("Collision");
-				}
-				else 
+				if (!(check_cell_collision(grid, &pl, 0, LEFT)))
 				{
 					if (pl.left.column + dir_x >= 0 && pl.right.column + dir_x >= 0)
 					{
-						grid[pl.left.row][pl.left.column].is_player = false;
-						grid[pl.right.row][pl.right.column].is_player = false;
 
-						grid[pl.left.row][pl.left.column].c_entity = NULL;
-						grid[pl.right.row][pl.right.column].c_entity = NULL;
-
-						grid[pl.left.row][pl.left.column + LEFT].is_player = true;
-						grid[pl.right.row][pl.right.column + LEFT].is_player = true;
-
-						grid[pl.left.row][pl.left.column + LEFT].c_entity = tmp_1;
-						grid[pl.right.row][pl.right.column + LEFT].c_entity = tmp_2;
-
-						pl.left.h_entity = tmp_1;
-						pl.right.h_entity = tmp_2;
+						move_player(grid, &pl, 0, dir_x);
 
 						pl.left.column--;
 						pl.right.column--;
 
-						set_grid_position_rect(get_rect(grid[pl.left.row][pl.left.column]), pl.left.row, pl.left.column); // Might improve the look of side-movement at or near step_limit
-						set_grid_position_rect(get_rect(grid[pl.right.row][pl.right.column]), pl.right.row, pl.right.column);
+						set_player_position_rect(grid, &pl);
 
 					}
 				}
 			}
 			if (dir_x == RIGHT)
 			{
-				if ((grid[pl.left.row][pl.left.column + RIGHT].c_entity) && !(grid[pl.left.row][pl.left.column + RIGHT].is_player) || (grid[pl.right.row][pl.right.column + RIGHT].c_entity) && !(grid[pl.right.row][pl.right.column + RIGHT].is_player))
-				{
-					puts("Collision");
-				}
-				else
+				if (!(check_cell_collision(grid, &pl, 0, RIGHT)))
 				{
 					if (pl.left.column + dir_x < GRID_COLUMNS && pl.right.column + dir_x < GRID_COLUMNS)
 					{
-						grid[pl.left.row][pl.left.column].is_player = false;
-						grid[pl.right.row][pl.right.column].is_player = false;
-
-						grid[pl.left.row][pl.left.column].c_entity = NULL;
-						grid[pl.right.row][pl.right.column].c_entity = NULL;
-
-						grid[pl.left.row][pl.left.column + RIGHT].is_player = true;
-						grid[pl.right.row][pl.right.column + RIGHT].is_player = true;
-
-						grid[pl.left.row][pl.left.column + RIGHT].c_entity = tmp_1;
-						grid[pl.right.row][pl.right.column + RIGHT].c_entity = tmp_2;
-
-						pl.left.h_entity = tmp_1;
-						pl.right.h_entity = tmp_2;
+						move_player(grid, &pl, 0, dir_x);
 
 						pl.left.column++;
 						pl.right.column++;
 
-						set_grid_position_rect(get_rect(grid[pl.left.row][pl.left.column]), pl.left.row, pl.left.column); // Might improve the look of side-movement at or near step_limit
-						set_grid_position_rect(get_rect(grid[pl.right.row][pl.right.column]), pl.right.row, pl.right.column);
+						set_player_position_rect(grid, &pl);
 
 					}
 				}
@@ -482,43 +473,24 @@ int main(int argc, char** argv)
 
 		if (step_time > step_limit)
 		{
-			set_grid_position_rect(get_rect(grid[pl.left.row][pl.left.column]), pl.left.row, pl.left.column); // Might improve the look of side-movement at or near step_limit
-			set_grid_position_rect(get_rect(grid[pl.right.row][pl.right.column]), pl.right.row, pl.right.column);
+			set_player_position_rect(grid, &pl);
 
-			entity* tmp_1 = pl.left.h_entity;
-			entity* tmp_2 = pl.right.h_entity;
-
-			if ((grid[pl.left.row + 1][pl.left.column].c_entity) && !(grid[pl.left.row + 1][pl.left.column].is_player) || (grid[pl.right.row + 1][pl.right.column].c_entity) && !(grid[pl.right.row + 1][pl.right.column].is_player))
+			if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL)))
 			{
-					pl.active = false;
-					printf("Collision.\n");
-			}
-			else 
-			{
-				grid[pl.left.row][pl.left.column].is_player = false;
-				grid[pl.right.row][pl.right.column].is_player = false;
-
-				grid[pl.left.row][pl.left.column].c_entity = NULL;
-				grid[pl.right.row][pl.right.column].c_entity = NULL;
-
-				grid[pl.left.row + 1][pl.left.column].is_player = true;
-				grid[pl.right.row + 1][pl.right.column].is_player = true;
-
-				grid[pl.left.row + 1][pl.left.column].c_entity = tmp_1;
-				grid[pl.right.row + 1][pl.right.column].c_entity = tmp_2;
-
-				pl.left.h_entity = tmp_1;
-				pl.right.h_entity = tmp_2;
+				move_player(grid, &pl, 1, 0);
 
 				pl.left.row++;
 				pl.right.row++;
 
-				set_grid_position_rect(get_rect(grid[pl.left.row][pl.left.column]), pl.left.row, pl.left.column); // Might improve the look of side-movement at or near step_limit
-				set_grid_position_rect(get_rect(grid[pl.right.row][pl.right.column]), pl.right.row, pl.right.column);
+				set_player_position_rect(grid, &pl);
+			}
+			else 
+			{
+				pl.active = false;
+				printf("Collision.\n");
 			}
 		}
 		if (step_time > step_limit) step_time = 0;
-		pill_has_moved = false;
 
 		// Rendering
 		SDL_RenderClear(renderer);
