@@ -88,7 +88,7 @@ void set_grid_position_rect(SDL_Rect* rect, int i, int j)
 
 void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl) 
 {
-	set_grid_position_rect(get_rect(grid[pl->left.row][pl->left.column]), pl->left.row, pl->left.column); // Might improve the look of side-movement at or near step_limit
+	set_grid_position_rect(get_rect(grid[pl->left.row][pl->left.column]), pl->left.row, pl->left.column);
 	set_grid_position_rect(get_rect(grid[pl->right.row][pl->right.column]), pl->right.row, pl->right.column);
 }
 
@@ -290,6 +290,75 @@ void render_bg(SDL_Renderer* renderer)
 	}
 }
 
+int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot) 
+{
+	// These temporary pointers allows the player blocks to move without respect to any order of operations.
+	int row_axis_l = 0, column_axis_l = 0;
+	int row_axis_r = 0, column_axis_r = 0;
+	switch (*rot) 
+	{
+		case FIRST:
+		{
+			row_axis_l = -1;
+			column_axis_r = -1;
+		}
+		break;
+
+		case SECOND:
+		{
+			row_axis_l = 1;
+			column_axis_l = 1;
+		}
+		break;
+
+		case THIRD:
+		{
+			column_axis_l = -1;
+			row_axis_r = -1;
+		}
+		break;
+
+		case FOURTH:
+		{
+			row_axis_r = 1;
+			column_axis_r = 1;
+		}
+		break;
+	}
+
+	entity* tmp_1 = pl->left.h_entity;
+	entity* tmp_2 = pl->right.h_entity;
+
+	if (pl->left.row + row_axis_l < 0 || pl->right.row + row_axis_r < 0) {
+		return -1;
+	}
+	else if (pl->left.column + column_axis_l >= GRID_COLUMNS - 1 && pl->right.column + column_axis_r >= GRID_COLUMNS - 1) {
+		return -1;
+	}
+	else {
+		grid[pl->left.row][pl->left.column].is_player = false;
+		grid[pl->right.row][pl->right.column].is_player = false;
+
+		grid[pl->left.row][pl->left.column].c_entity = NULL;
+		grid[pl->right.row][pl->right.column].c_entity = NULL;
+
+		grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player = true;
+		grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player = true;
+
+		grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity = tmp_1;
+		grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity = tmp_2;
+
+		pl->left.row = pl->left.row + row_axis_l;
+		pl->left.column = pl->left.column + column_axis_l;
+		pl->right.row = pl->right.row + row_axis_r;
+		pl->right.column = pl->right.column + column_axis_r;
+
+		pl->left.h_entity = tmp_1;
+		pl->right.h_entity = tmp_2;
+	}
+	return 0;
+}
+
 int main(int argc, char** argv)
 {
 	SDL_Init(SDL_INIT_VIDEO);
@@ -307,8 +376,8 @@ int main(int argc, char** argv)
 	cell grid[GRID_ROWS][GRID_COLUMNS];
 	init_grid(grid, entities_v);
 
-	half left = { &entities_p[0], 0, 5 };
-	half right = { &entities_p[1], 0, 6 };
+	half left = { &entities_p[0], 0, 6 };
+	half right = { &entities_p[1], 0, 7 };
 
 	pill pl = { left, right, true};
 	int pill_count = 2;
@@ -346,12 +415,12 @@ int main(int argc, char** argv)
 	float delta_time;
 
 	float step_time = 0;
-	float step_limit = 2;
+	float step_limit = 3;
 
 	int gravity = 1;
 	bool disable_ghost = false;
 
-	rotation rot = FOURTH;
+	rotation rot = FIRST;
 	bool has_rotated = false;
 
 	speed fall_speed = NORMAL;
@@ -367,7 +436,18 @@ int main(int argc, char** argv)
 		while (SDL_PollEvent(&event))
 		{	
 			if (event.key.keysym.sym == SDLK_UP && event.key.state == SDL_PRESSED) {
-				// TODO: Rotation
+				if (rot > 3) rot = 0;
+				int ret = rotate_player(grid, &pl, &rot);
+				if (ret != 0) {
+					puts("Can't move.");
+				}
+				else {
+					set_player_position_rect(grid, &pl);
+					printf("Left: i=%d j=%d\n", pl.left.row, pl.left.column);
+					printf("Right: i=%d j=%d\n", pl.right.row, pl.right.column);
+					rot += 1;
+				}
+				
 			}
 
 			if (event.key.keysym.sym == SDLK_DOWN && event.key.state == SDL_PRESSED) {
@@ -420,32 +500,41 @@ int main(int argc, char** argv)
 			entity* tmp_1;
 			entity* tmp_2;
 
-			printf("pl.left: x = %d, y = %d\n", pl.left.row, pl.left.column);
-			printf("pl.right: x = %d, y = %d\n", pl.right.row, pl.right.column);
-
 			grid[pl.left.row][pl.left.column].is_player = false;
 			grid[pl.right.row][pl.right.column].is_player = false;
 			
-			pl.right.row = 0;
-			pl.left.row = 0;
-			
+			int difference_left = pl.left.row - pl.right.row;
+			int difference_right = pl.right.row - pl.left.row;
+
+			if (difference_left > 0) {
+				pl.left.row = difference_left;
+			}
+			else {
+				pl.left.row = 0;
+			}
+
+			if (difference_right > 0) {
+				pl.right.row = difference_right;
+			}
+			else {
+				pl.right.row = 0;
+			}
+
 			pl.left.h_entity = &entities_p[pill_count];
 			pl.right.h_entity = &entities_p[pill_count + 1];
 
 			tmp_1 = pl.left.h_entity;
 			tmp_2 = pl.right.h_entity;
 
-			if (check_cell_collision(grid, &pl, 0, 0)) {
+			if (check_cell_collision(grid, &pl, 0, 0)) 
+			{
 				quit = true;
 				printf("Oh no... ! You lost !\n");
 			}
-			else {
-			
+			else 
+			{
 				grid[pl.right.row][pl.right.column].c_entity = tmp_2;
 				grid[pl.left.row][pl.left.column].c_entity = tmp_1;
-
-				printf("pl.left: x = %d, y = %d\n", pl.left.row, pl.left.column);
-				printf("pl.right: x = %d, y = %d\n", pl.right.row, pl.right.column);
 
 				grid[pl.left.row][pl.left.column].is_player = true;
 				grid[pl.right.row][pl.right.column].is_player = true;
@@ -466,8 +555,8 @@ int main(int argc, char** argv)
 					{
 						move_player(grid, &pl, 0, dir_x);
 
-						pl.left.column--;
-						pl.right.column--;
+						pl.left.column = pl.left.column + dir_x;
+						pl.right.column = pl.right.column + dir_x;
 
 						set_player_position_rect(grid, &pl);
 					}
@@ -481,8 +570,8 @@ int main(int argc, char** argv)
 					{
 						move_player(grid, &pl, 0, dir_x);
 
-						pl.left.column++;
-						pl.right.column++;
+						pl.left.column = pl.left.column + dir_x;
+						pl.right.column = pl.right.column + dir_x;
 
 						set_player_position_rect(grid, &pl);
 					}
