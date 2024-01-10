@@ -423,7 +423,7 @@ int main(int argc, char** argv)
 	float delta_time;
 
 	float step_time = 0;
-	float step_limit = 3;
+	float step_limit = 1;
 
 	int gravity = 1;
 	bool disable_ghost = false;
@@ -500,15 +500,15 @@ int main(int argc, char** argv)
 		// Logic
 
 		// Sets new active pill
-		if (!pl.active) 
+		if (!pl.active && step_time < step_limit) 
 		{
 			pill_count += 2;
 
-			entity* tmp_1;
-			entity* tmp_2;
-
 			grid[pl.left.row][pl.left.column].is_player = false;
 			grid[pl.right.row][pl.right.column].is_player = false;
+
+			entity* tmp_1;
+			entity* tmp_2;
 			
 			int difference_left = pl.left.row - pl.right.row;
 			int difference_right = pl.right.row - pl.left.row;
@@ -588,7 +588,7 @@ int main(int argc, char** argv)
 		}
 
 		// Gravity is applied here.
-		if (step_time > step_limit)
+		if (step_time > step_limit && pl.active)
 		{
 			set_player_position_rect(grid, &pl);
 			if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL)))
