@@ -290,7 +290,7 @@ void render_bg(SDL_Renderer* renderer)
 	}
 }
 
-int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot) 
+int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, bool reverse) 
 {
 	// These temporary pointers allows the player blocks to move without respect to any order of operations.
 	int row_axis_l = 0, column_axis_l = 0;
@@ -329,41 +329,52 @@ int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot)
 	entity* tmp_1 = pl->left.h_entity;
 	entity* tmp_2 = pl->right.h_entity;
 
-	if (pl->left.row + row_axis_l < 0 || pl->right.row + row_axis_r < 0) {
+	if (reverse) {
+		row_axis_l = -row_axis_l;
+		column_axis_l = -column_axis_l;
+		row_axis_r = -row_axis_r;
+		column_axis_r = -column_axis_r;
+	}
+
+	// Wall kick off ceiling
+	if (pl->left.row + row_axis_l < 0 || pl->right.row + row_axis_r < 0) 
+	{
+		row_axis_l++;
+		row_axis_r++;
+	}
+	// Wall kick off right wall
+	if (pl->left.column + column_axis_l >= GRID_COLUMNS - 1 && pl->right.column + column_axis_r >= GRID_COLUMNS - 1) 
+	{
+		column_axis_l--;
+		column_axis_r--;
+	}
+	// Rotation collision
+	if ((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player) ||
+		(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player))
+	{
 		return -1;
 	}
-	else {
-		if (pl->left.column + column_axis_l >= GRID_COLUMNS - 1 && pl->right.column + column_axis_r >= GRID_COLUMNS - 1) {
-			column_axis_l--;
-			column_axis_r--;
-		}
 
-		if ((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player) ||
-			(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player))
-		{
-			return -1;
-		}
+	grid[pl->left.row][pl->left.column].is_player = false;
+	grid[pl->right.row][pl->right.column].is_player = false;
 
-		grid[pl->left.row][pl->left.column].is_player = false;
-		grid[pl->right.row][pl->right.column].is_player = false;
+	grid[pl->left.row][pl->left.column].c_entity = NULL;
+	grid[pl->right.row][pl->right.column].c_entity = NULL;
 
-		grid[pl->left.row][pl->left.column].c_entity = NULL;
-		grid[pl->right.row][pl->right.column].c_entity = NULL;
+	grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player = true;
+	grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player = true;
 
-		grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player = true;
-		grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player = true;
+	grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity = tmp_1;
+	grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity = tmp_2;
 
-		grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity = tmp_1;
-		grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity = tmp_2;
+	pl->left.row = pl->left.row + row_axis_l;
+	pl->left.column = pl->left.column + column_axis_l;
+	pl->right.row = pl->right.row + row_axis_r;
+	pl->right.column = pl->right.column + column_axis_r;
 
-		pl->left.row = pl->left.row + row_axis_l;
-		pl->left.column = pl->left.column + column_axis_l;
-		pl->right.row = pl->right.row + row_axis_r;
-		pl->right.column = pl->right.column + column_axis_r;
-
-		pl->left.h_entity = tmp_1;
-		pl->right.h_entity = tmp_2;
-	}
+	pl->left.h_entity = tmp_1;
+	pl->right.h_entity = tmp_2;
+	
 	return 0;
 }
 
@@ -384,8 +395,8 @@ int main(int argc, char** argv)
 	cell grid[GRID_ROWS][GRID_COLUMNS];
 	init_grid(grid, entities_v);
 
-	half left = { &entities_p[0], 0, 3 };
-	half right = { &entities_p[1], 0, 4 };
+	half left = { &entities_p[0], 0, GRID_COLUMNS / 2 - 1};
+	half right = { &entities_p[1], 0, GRID_COLUMNS / 2 };
 
 	pill pl = { left, right, true};
 	int pill_count = 2;
@@ -427,6 +438,9 @@ int main(int argc, char** argv)
 
 	int gravity = 1;
 	bool disable_ghost = false;
+	bool pause = false;
+	
+	int ret = 0;
 
 	rotation rot = FIRST;
 
@@ -438,13 +452,14 @@ int main(int argc, char** argv)
 	{
 		current_time = SDL_GetTicks();
 		delta_time = (current_time - previous_time) / 1000.0f;
+		if (pause) delta_time = 0;
 		step_time += delta_time;
 
 		while (SDL_PollEvent(&event))
 		{	
-			if (event.key.keysym.sym == SDLK_UP && event.key.state == SDL_PRESSED) {
+			if (event.key.keysym.sym == SDLK_e && event.key.state == SDL_PRESSED) {
 				if (rot > 3) rot = 0;
-				int ret = rotate_player(grid, &pl, &rot);
+				ret = rotate_player(grid, &pl, &rot, false);
 				if (ret != 0) {
 					puts("Can't move.");
 				}
@@ -455,6 +470,20 @@ int main(int argc, char** argv)
 					rot += 1;
 				}
 				
+			}
+
+			if (event.key.keysym.sym == SDLK_r && event.key.state == SDL_PRESSED) {
+				rot -= 1;
+				if (rot < 0) rot = 3;
+				ret = rotate_player(grid, &pl, &rot, true);
+				if (ret != 0) {
+					puts("Can't move.");
+				}
+				else {
+					set_player_position_rect(grid, &pl);
+					printf("Left: i=%d j=%d\n", pl.left.row, pl.left.column);
+					printf("Right: i=%d j=%d\n", pl.right.row, pl.right.column);	
+				}
 			}
 
 			if (event.key.keysym.sym == SDLK_DOWN && event.key.state == SDL_PRESSED) {
@@ -479,6 +508,18 @@ int main(int argc, char** argv)
 				dir_x = RIGHT;
 			}
 
+			if (event.key.keysym.sym == SDLK_ESCAPE && event.key.state == SDL_PRESSED) {
+				switch (pause)
+				{
+					case true:
+						pause = false;
+						break;
+					case false:
+						pause = true;
+						break;
+				}
+			}
+
 			if (event.key.keysym.sym == SDLK_g && event.key.state == SDL_PRESSED) {
 				switch (disable_ghost)
 				{
@@ -496,12 +537,12 @@ int main(int argc, char** argv)
 			}
 		}
 
-
 		// Logic
 
 		// Sets new active pill
-		if (!pl.active && step_time < step_limit) 
+		if (!pl.active) 
 		{
+			puts("Re-active pill");
 			pill_count += 2;
 
 			grid[pl.left.row][pl.left.column].is_player = false;
@@ -618,6 +659,7 @@ int main(int argc, char** argv)
 		render_character_area(renderer, dr_pellet_t);
 
 		bool render_ghost = false;
+
 		for (int i = 0; i < GRID_ROWS; i++) 
 		{
 			for (int j = 0; j < GRID_COLUMNS; j++) 
@@ -637,7 +679,6 @@ int main(int argc, char** argv)
 						SDL_RenderCopy(renderer, yellow_block_t, NULL, get_rect(grid[i][j]));
 					}
 				}
-				
 			}
 		}
 		
