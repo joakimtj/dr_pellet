@@ -65,6 +65,7 @@ struct {
 struct {
 	half left;
 	half right;
+	rotation roto;
 	bool active;
 } typedef pill;
 
@@ -76,6 +77,13 @@ int get_random_integer(int i)
 SDL_Rect* get_rect(cell c) 
 {
 	return &c.c_entity->rect;
+}
+
+SDL_Rect create_rect()
+{
+#define DEFAULT_POS 0
+	SDL_Rect rect = { DEFAULT_POS + (PADDING + RECT_SIZE), DEFAULT_POS + (PADDING + RECT_SIZE), RECT_SIZE, RECT_SIZE };
+	return rect;
 }
 
 void set_grid_position_rect(SDL_Rect* rect, int i, int j) 
@@ -92,36 +100,111 @@ void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
 	set_grid_position_rect(get_rect(grid[pl->right.row][pl->right.column]), pl->right.row, pl->right.column);
 }
 
-int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis, int column_axis) 
+int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r) 
 {
 	// Checks if the adjacent node (selected by row_axis and column_axis) is occupied by a cell and if that cell is the player.
-	if ((grid[pl->left.row + row_axis][pl->left.column + column_axis].c_entity) && !(grid[pl->left.row + row_axis][pl->left.column + column_axis].is_player) || 
-		(grid[pl->right.row + row_axis][pl->right.column + column_axis].c_entity) && !(grid[pl->right.row + row_axis][pl->right.column + column_axis].is_player))
+	if ((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player) ||
+		(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player))
+	{
 		return 1;
+	}
 	else return 0;
 }
 
+void disable_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
+{
+	grid[pl->left.row][pl->left.column].is_player = false;
+	grid[pl->right.row][pl->right.column].is_player = false;
+}
 
-void move_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis, int column_axis) 
+void remove_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
+{
+	grid[pl->left.row][pl->left.column].c_entity = NULL;
+	grid[pl->right.row][pl->right.column].c_entity = NULL;
+}
+
+void move_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r) 
 {
 	// These temporary pointers allows the player blocks to move without respect to any order of operations.
 	entity* tmp_1 = pl->left.h_entity;
 	entity* tmp_2 = pl->right.h_entity;
 	
-	grid[pl->left.row][pl->left.column].is_player = false;
-	grid[pl->right.row][pl->right.column].is_player = false;
+	disable_pill(grid, pl);
+	remove_pill(grid, pl);
 
-	grid[pl->left.row][pl->left.column].c_entity = NULL;
-	grid[pl->right.row][pl->right.column].c_entity = NULL;
+	grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player = true;
+	grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player = true;
 
-	grid[pl->left.row + row_axis][pl->left.column + column_axis].is_player = true;
-	grid[pl->right.row + row_axis][pl->right.column + column_axis].is_player = true;
+	grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity = tmp_1;
+	grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity = tmp_2;
 
-	grid[pl->left.row + row_axis][pl->left.column + column_axis].c_entity = tmp_1;
-	grid[pl->right.row + row_axis][pl->right.column + column_axis].c_entity = tmp_2;
+	pl->left.row = pl->left.row + row_axis_l;
+	pl->left.column = pl->left.column + column_axis_l;
+	pl->right.row = pl->right.row + row_axis_r;
+	pl->right.column = pl->right.column + column_axis_r;
 
 	pl->left.h_entity = tmp_1;
 	pl->right.h_entity = tmp_2;
+}
+
+int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, bool reverse)
+{
+	// These temporary pointers allows the player blocks to move without respect to any order of operations.
+	int row_axis_l = 0, column_axis_l = 0;
+	int row_axis_r = 0, column_axis_r = 0;
+	switch (*rot)
+	{
+		case FIRST:
+		row_axis_l = -1;
+		column_axis_r = -1;
+		break;
+
+		case SECOND:
+		row_axis_l = 1;
+		column_axis_l = 1;
+		break;
+
+		case THIRD:
+		column_axis_l = -1;
+		row_axis_r = -1;
+		break;
+
+		case FOURTH:
+		row_axis_r = 1;
+		column_axis_r = 1;
+		break;
+	}
+
+	if (reverse) {
+		row_axis_l = -row_axis_l;
+		column_axis_l = -column_axis_l;
+		row_axis_r = -row_axis_r;
+		column_axis_r = -column_axis_r;
+	}
+
+	// Wall kick off ceiling
+	if (pl->left.row + row_axis_l < 0 || pl->right.row + row_axis_r < 0)
+	{
+		row_axis_l++;
+		row_axis_r++;
+	}
+	// Wall kick off right wall
+	if (pl->left.column + column_axis_l >= GRID_COLUMNS - 1 && pl->right.column + column_axis_r >= GRID_COLUMNS - 1)
+	{
+		column_axis_l--;
+		column_axis_r--;
+	}
+	// Rotation collision
+	if (check_cell_collision(grid, pl, row_axis_l, column_axis_l, row_axis_r, column_axis_r))
+	{
+		return -1;
+	}
+	else 
+	{
+		move_player(grid, pl, row_axis_l, column_axis_l, row_axis_r, column_axis_r);
+	}
+
+	return 0;
 }
 
 void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities) 
@@ -159,11 +242,22 @@ void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities)
 	printf("in func, init_grid()\nentities set to grid: %d\n", entity_count);
 }
 
-SDL_Rect create_rect() 
+pill init_pill(entity* entities_p)
 {
-	#define DEFAULT_POS 0	
-	SDL_Rect rect = { DEFAULT_POS + (PADDING + RECT_SIZE), DEFAULT_POS + (PADDING + RECT_SIZE), RECT_SIZE, RECT_SIZE};
-	return rect;
+	half left = { &entities_p[0], 0, GRID_COLUMNS / 2 - 1 };
+	half right = { &entities_p[1], 0, GRID_COLUMNS / 2 };
+
+	return (pill) { left, right, FIRST, true };
+}
+
+void set_initial_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
+{
+	grid[pl->left.row][pl->left.column].c_entity = pl->left.h_entity;
+	grid[pl->right.row][pl->right.column].c_entity = pl->right.h_entity;
+	grid[pl->left.row][pl->left.column].is_player = true;
+	grid[pl->right.row][pl->right.column].is_player = true;
+	set_grid_position_rect(get_rect(grid[pl->left.row][pl->left.column]), pl->left.row, pl->left.column);
+	set_grid_position_rect(get_rect(grid[pl->right.row][pl->right.column]), pl->right.row, pl->right.column);
 }
 
 entity* init_entities(int mode, int n_entities) 
@@ -197,6 +291,8 @@ entity* init_entities(int mode, int n_entities)
 	}
 	return entities;
 }
+
+
 
 void render_character_area(SDL_Renderer* renderer, SDL_Texture* dr_pellet_t) 
 {
@@ -256,106 +352,15 @@ void render_grid_area(SDL_Renderer* renderer)
 	
 }
 
-void render_bg(SDL_Renderer* renderer)
+void render_bg(SDL_Renderer* renderer) 
 {
 	SDL_Rect bg_rect = create_rect();
 	bg_rect.x = 0;
 	bg_rect.y = 0;
 	bg_rect.w = WINDOW_WIDTH;
 	bg_rect.h = WINDOW_HEIGHT;
-
 	SDL_SetRenderDrawColor(renderer, 0x8b, 0xb4, 0xd9, 255);
 	SDL_RenderFillRect(renderer, &bg_rect);
-	SDL_RenderDrawRect(renderer, &bg_rect);
-
-}
-
-int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, bool reverse) 
-{
-	// These temporary pointers allows the player blocks to move without respect to any order of operations.
-	int row_axis_l = 0, column_axis_l = 0;
-	int row_axis_r = 0, column_axis_r = 0;
-	switch (*rot) 
-	{
-		case FIRST:
-		{
-			row_axis_l = -1;
-			column_axis_r = -1;
-		}
-		break;
-
-		case SECOND:
-		{
-			row_axis_l = 1;
-			column_axis_l = 1;
-		}
-		break;
-
-		case THIRD:
-		{
-			column_axis_l = -1;
-			row_axis_r = -1;
-		}
-		break;
-
-		case FOURTH:
-		{
-			row_axis_r = 1;
-			column_axis_r = 1;
-		}
-		break;
-	}
-
-	entity* tmp_1 = pl->left.h_entity;
-	entity* tmp_2 = pl->right.h_entity;
-
-	if (reverse) {
-		row_axis_l = -row_axis_l;
-		column_axis_l = -column_axis_l;
-		row_axis_r = -row_axis_r;
-		column_axis_r = -column_axis_r;
-	}
-
-	// Wall kick off ceiling
-	if (pl->left.row + row_axis_l < 0 || pl->right.row + row_axis_r < 0) 
-	{
-		row_axis_l++;
-		row_axis_r++;
-	}
-	// Wall kick off right wall
-	if (pl->left.column + column_axis_l >= GRID_COLUMNS - 1 && pl->right.column + column_axis_r >= GRID_COLUMNS - 1) 
-	{
-		column_axis_l--;
-		column_axis_r--;
-	}
-	// Rotation collision
-	if ((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player) ||
-		(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player))
-	{
-		return -1;
-	}
-
-	grid[pl->left.row][pl->left.column].is_player = false;
-	grid[pl->right.row][pl->right.column].is_player = false;
-
-	grid[pl->left.row][pl->left.column].c_entity = NULL;
-	grid[pl->right.row][pl->right.column].c_entity = NULL;
-
-	grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player = true;
-	grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player = true;
-
-	grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity = tmp_1;
-	grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity = tmp_2;
-
-	pl->left.row = pl->left.row + row_axis_l;
-	pl->left.column = pl->left.column + column_axis_l;
-	pl->right.row = pl->right.row + row_axis_r;
-	pl->right.column = pl->right.column + column_axis_r;
-
-	pl->left.h_entity = tmp_1;
-	pl->right.h_entity = tmp_2;
-	
-	return 0;
 }
 
 int main(int argc, char** argv)
@@ -375,19 +380,10 @@ int main(int argc, char** argv)
 	cell grid[GRID_ROWS][GRID_COLUMNS];
 	init_grid(grid, entities_v);
 
-	half left = { &entities_p[0], 0, GRID_COLUMNS / 2 - 1};
-	half right = { &entities_p[1], 0, GRID_COLUMNS / 2 };
+	pill pl = init_pill(entities_p);
+	set_initial_pill(grid, &pl);
 
-	pill pl = { left, right, true};
 	int pill_count = 2;
-
-	// Init first player block 
-	grid[pl.left.row][pl.left.column].c_entity = pl.left.h_entity;
-	grid[pl.right.row][pl.right.column].c_entity = pl.right.h_entity;
-	grid[pl.left.row][pl.left.column].is_player = true;
-	grid[pl.right.row][pl.right.column].is_player = true;
-	set_grid_position_rect(get_rect(grid[pl.left.row][pl.left.column]), pl.left.row, pl.left.column);
-	set_grid_position_rect(get_rect(grid[pl.right.row][pl.right.column]), pl.right.row, pl.right.column);
 
 	SDL_Surface* red_block_bmp = SDL_LoadBMP("red_block.bmp");
 	SDL_Texture* red_block_t = SDL_CreateTextureFromSurface(renderer, red_block_bmp);
@@ -414,12 +410,10 @@ int main(int argc, char** argv)
 	float delta_time;
 	uint32_t frame_count = 0;
 	uint32_t last_second = previous_time;
-
 	float step_time = 0;
 	float step_limit = 1;
 
 	int gravity = 1;
-
 	bool disable_ghost = false;
 	bool pause = false;
 	
@@ -461,7 +455,6 @@ int main(int argc, char** argv)
 					printf("Right: i=%d j=%d\n", pl.right.row, pl.right.column);
 					rot += 1;
 				}
-				
 			}
 
 			if (event.key.keysym.sym == SDLK_r && event.key.state == SDL_PRESSED) {
@@ -470,6 +463,7 @@ int main(int argc, char** argv)
 				ret = rotate_player(grid, &pl, &rot, true);
 				if (ret != 0) {
 					puts("Can't move.");
+					rot++;
 				}
 				else {
 					set_player_position_rect(grid, &pl);
@@ -481,13 +475,9 @@ int main(int argc, char** argv)
 			if (event.key.keysym.sym == SDLK_s && event.key.state == SDL_PRESSED) {
 				step_time = 0;
 				set_player_position_rect(grid, &pl);
-				if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL)))
+				if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL, gravity, NEUTRAL)))
 				{
-					move_player(grid, &pl, 1, 0);
-
-					pl.left.row++;
-					pl.right.row++;
-
+					move_player(grid, &pl, gravity, 0, gravity, 0);
 					set_player_position_rect(grid, &pl);
 				}
 				else
@@ -509,11 +499,11 @@ int main(int argc, char** argv)
 				switch (pause)
 				{
 					case true:
-						pause = false;
-						break;
+					pause = false;
+					break;
 					case false:
-						pause = true;
-						break;
+					pause = true;
+					break;
 				}
 			}
 
@@ -521,11 +511,11 @@ int main(int argc, char** argv)
 				switch (disable_ghost)
 				{
 					case true:
-						disable_ghost = false;
-						break;
+					disable_ghost = false;
+					break;
 					case false:
-						disable_ghost = true;
-						break;
+					disable_ghost = true;
+					break;
 				}
 			}
 
@@ -539,15 +529,10 @@ int main(int argc, char** argv)
 		// Sets new active pill
 		if (!pl.active) 
 		{
-			puts("Re-active pill");
 			pill_count += 2;
-
-			grid[pl.left.row][pl.left.column].is_player = false;
-			grid[pl.right.row][pl.right.column].is_player = false;
-
-			entity* tmp_1;
-			entity* tmp_2;
 			
+			disable_pill(grid, &pl);
+
 			int difference_left = pl.left.row - pl.right.row;
 			int difference_right = pl.right.row - pl.left.row;
 
@@ -568,22 +553,14 @@ int main(int argc, char** argv)
 			pl.left.h_entity = &entities_p[pill_count];
 			pl.right.h_entity = &entities_p[pill_count + 1];
 
-			tmp_1 = pl.left.h_entity;
-			tmp_2 = pl.right.h_entity;
-
-			if (check_cell_collision(grid, &pl, 0, 0)) 
+			if (check_cell_collision(grid, &pl, pl.left.row, pl.left.column, pl.right.row, pl.right.column)) 
 			{
 				quit = true;
 				printf("Oh no... ! You lost !\n");
 			}
 			else 
 			{
-				grid[pl.right.row][pl.right.column].c_entity = tmp_2;
-				grid[pl.left.row][pl.left.column].c_entity = tmp_1;
-
-				grid[pl.left.row][pl.left.column].is_player = true;
-				grid[pl.right.row][pl.right.column].is_player = true;
-
+				move_player(grid, &pl, 0, 0, 0, 0);
 				set_player_position_rect(grid, &pl);
 
 				pl.active = true;
@@ -594,30 +571,22 @@ int main(int argc, char** argv)
 		{
 			if (dir_x == LEFT) 
 			{
-				if (!(check_cell_collision(grid, &pl, 0, LEFT)))
+				if (!(check_cell_collision(grid, &pl, 0, LEFT, 0, LEFT)))
 				{
 					if (pl.left.column + dir_x >= 0 && pl.right.column + dir_x >= 0)
 					{
-						move_player(grid, &pl, 0, dir_x);
-
-						pl.left.column = pl.left.column + dir_x;
-						pl.right.column = pl.right.column + dir_x;
-
+						move_player(grid, &pl, 0, dir_x, 0, dir_x);
 						set_player_position_rect(grid, &pl);
 					}
 				}
 			}
 			if (dir_x == RIGHT)
 			{
-				if (!(check_cell_collision(grid, &pl, 0, RIGHT)))
+				if (!(check_cell_collision(grid, &pl, 0, RIGHT, 0, RIGHT)))
 				{
 					if (pl.left.column + dir_x < GRID_COLUMNS && pl.right.column + dir_x < GRID_COLUMNS)
 					{
-						move_player(grid, &pl, 0, dir_x);
-
-						pl.left.column = pl.left.column + dir_x;
-						pl.right.column = pl.right.column + dir_x;
-
+						move_player(grid, &pl, 0, dir_x, 0, dir_x);
 						set_player_position_rect(grid, &pl);
 					}
 				}
@@ -629,13 +598,9 @@ int main(int argc, char** argv)
 		if (step_time > step_limit && pl.active)
 		{
 			set_player_position_rect(grid, &pl);
-			if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL)))
+			if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL, gravity, NEUTRAL)))
 			{
-				move_player(grid, &pl, 1, 0);
-
-				pl.left.row++;
-				pl.right.row++;
-
+				move_player(grid, &pl, gravity, 0, gravity, 0);
 				set_player_position_rect(grid, &pl);
 			}
 			else 
@@ -681,7 +646,6 @@ int main(int argc, char** argv)
 		
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 		SDL_RenderPresent(renderer);
-		
 	}
 	free(entities_v);
 	free(entities_p);
