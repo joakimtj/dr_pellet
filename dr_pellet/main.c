@@ -12,7 +12,7 @@
 #define WINDOW_HEIGHT 800 
 #define GRID_ROWS 12 // The height of the play-area.
 #define GRID_COLUMNS 8 // The width of the play-area.
-#define GRID_ROW_CLEARANCE 6 // Viruses will not spawn above or on this ROW.
+#define GRID_ROW_CLEARANCE 8 // Viruses will not spawn above or on this ROW.
 #define VIRUS_N 66 // The N viruses to be spawned on the grid.
 #define RECT_SIZE 30
 #define PADDING 1
@@ -81,7 +81,7 @@ SDL_Rect* get_rect(cell c)
 
 SDL_Rect create_rect()
 {
-#define DEFAULT_POS 0
+	#define DEFAULT_POS 0
 	SDL_Rect rect = { DEFAULT_POS + (PADDING + RECT_SIZE), DEFAULT_POS + (PADDING + RECT_SIZE), RECT_SIZE, RECT_SIZE };
 	return rect;
 }
@@ -102,13 +102,29 @@ void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
 
 int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r) 
 {
-	// Checks if the adjacent node (selected by row_axis and column_axis) is occupied by a cell and if that cell is the player.
-	if ((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player) ||
-		(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player))
+	int collisions = 0;
+	if ((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player))
 	{
-		return 1;
+		puts("Left collision");
+		collisions++;
 	}
-	else return 0;
+	if ((grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player))
+	{
+		puts("Right collision");
+		collisions++;
+	}
+	return collisions;
+}
+
+void check_virus(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl) 
+{
+	// TODO: Implement this bro lol	
+}
+
+void enable_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
+{
+	grid[pl->left.row][pl->left.column].is_player = true;
+	grid[pl->right.row][pl->right.column].is_player = true;
 }
 
 void disable_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
@@ -132,16 +148,15 @@ void move_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, i
 	disable_pill(grid, pl);
 	remove_pill(grid, pl);
 
-	grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player = true;
-	grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player = true;
-
-	grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity = tmp_1;
-	grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity = tmp_2;
-
 	pl->left.row = pl->left.row + row_axis_l;
 	pl->left.column = pl->left.column + column_axis_l;
 	pl->right.row = pl->right.row + row_axis_r;
 	pl->right.column = pl->right.column + column_axis_r;
+
+	enable_pill(grid, pl);
+
+	grid[pl->left.row][pl->left.column].c_entity = tmp_1;
+	grid[pl->right.row][pl->right.column].c_entity = tmp_2;
 
 	pl->left.h_entity = tmp_1;
 	pl->right.h_entity = tmp_2;
@@ -152,8 +167,7 @@ int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, b
 	// These temporary pointers allows the player blocks to move without respect to any order of operations.
 	int row_axis_l = 0, column_axis_l = 0;
 	int row_axis_r = 0, column_axis_r = 0;
-	switch (*rot)
-	{
+	switch (*rot) {
 		case FIRST:
 		row_axis_l = -1;
 		column_axis_r = -1;
@@ -181,28 +195,19 @@ int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, b
 		row_axis_r = -row_axis_r;
 		column_axis_r = -column_axis_r;
 	}
-
 	// Wall kick off ceiling
-	if (pl->left.row + row_axis_l < 0 || pl->right.row + row_axis_r < 0)
-	{
+	if (pl->left.row + row_axis_l < 0 || pl->right.row + row_axis_r < 0) {
 		row_axis_l++;
 		row_axis_r++;
 	}
 	// Wall kick off right wall
-	if (pl->left.column + column_axis_l >= GRID_COLUMNS - 1 && pl->right.column + column_axis_r >= GRID_COLUMNS - 1)
-	{
+	if (pl->left.column + column_axis_l >= GRID_COLUMNS - 1 && pl->right.column + column_axis_r >= GRID_COLUMNS - 1) {
 		column_axis_l--;
 		column_axis_r--;
 	}
 	// Rotation collision
-	if (check_cell_collision(grid, pl, row_axis_l, column_axis_l, row_axis_r, column_axis_r))
-	{
-		return -1;
-	}
-	else 
-	{
-		move_player(grid, pl, row_axis_l, column_axis_l, row_axis_r, column_axis_r);
-	}
+	if (check_cell_collision(grid, pl, row_axis_l, column_axis_l, row_axis_r, column_axis_r)) return -1;
+	else move_player(grid, pl, row_axis_l, column_axis_l, row_axis_r, column_axis_r);
 
 	return 0;
 }
@@ -219,7 +224,7 @@ void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities)
 			{
 				if (entity_count < VIRUS_N)
 				{
-					random_i = get_random_integer(5);
+					random_i = get_random_integer(2);
 					if (random_i == 0) {
 						grid[i][j].c_entity = NULL;
 					}
@@ -292,8 +297,6 @@ entity* init_entities(int mode, int n_entities)
 	return entities;
 }
 
-
-
 void render_character_area(SDL_Renderer* renderer, SDL_Texture* dr_pellet_t) 
 {
 	SDL_Rect area_rect;
@@ -349,7 +352,6 @@ void render_grid_area(SDL_Renderer* renderer)
 
 	SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 255);
 	SDL_RenderDrawRect(renderer, &outline_rect);
-	
 }
 
 void render_bg(SDL_Renderer* renderer) 
@@ -475,13 +477,14 @@ int main(int argc, char** argv)
 			if (event.key.keysym.sym == SDLK_s && event.key.state == SDL_PRESSED) {
 				step_time = 0;
 				set_player_position_rect(grid, &pl);
-				if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL, gravity, NEUTRAL)))
+				if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL, gravity, NEUTRAL)) && ((pl.left.row + gravity < GRID_ROWS) && pl.right.row + gravity < GRID_ROWS))
 				{
 					move_player(grid, &pl, gravity, 0, gravity, 0);
 					set_player_position_rect(grid, &pl);
 				}
 				else
 				{
+					check_virus(grid, &pl);
 					pl.active = false;
 					printf("Key-S: Collision.\n");
 				}
@@ -598,13 +601,14 @@ int main(int argc, char** argv)
 		if (step_time > step_limit && pl.active)
 		{
 			set_player_position_rect(grid, &pl);
-			if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL, gravity, NEUTRAL)))
+			if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL, gravity, NEUTRAL)) && ((pl.left.row + gravity < GRID_ROWS) && pl.right.row + gravity < GRID_ROWS))
 			{
 				move_player(grid, &pl, gravity, 0, gravity, 0);
 				set_player_position_rect(grid, &pl);
 			}
 			else 
 			{
+				check_virus(grid, &pl);
 				pl.active = false;
 				printf("Step-time Collision.\n");
 			}
