@@ -486,25 +486,30 @@ int main(int argc, char** argv)
 				}
 			}
 
-			if (event.key.keysym.sym == SDLK_DOWN && event.key.state == SDL_PRESSED) {
-				switch (fall_speed) 
+			if (event.key.keysym.sym == SDLK_s && event.key.state == SDL_PRESSED) {
+				step_time = 0;
+				set_player_position_rect(grid, &pl);
+				if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL)))
 				{
-					case NORMAL:
-						step_limit = 0.5;
-						fall_speed = SLOW;
-						break;
-					case SLOW:
-						step_limit = 1;
-						fall_speed = NORMAL;
-						break;
+					move_player(grid, &pl, 1, 0);
+
+					pl.left.row++;
+					pl.right.row++;
+
+					set_player_position_rect(grid, &pl);
+				}
+				else
+				{
+					pl.active = false;
+					printf("Key-S: Collision.\n");
 				}
 			}
 
-			if (event.key.keysym.sym == SDLK_LEFT && event.key.state == SDL_PRESSED) {
+			if (event.key.keysym.sym == SDLK_a && event.key.state == SDL_PRESSED) {
 				dir_x = LEFT;
 			}
 
-			if (event.key.keysym.sym == SDLK_RIGHT && event.key.state == SDL_PRESSED) {
+			if (event.key.keysym.sym == SDLK_d && event.key.state == SDL_PRESSED) {
 				dir_x = RIGHT;
 			}
 
