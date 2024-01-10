@@ -256,38 +256,18 @@ void render_grid_area(SDL_Renderer* renderer)
 	
 }
 
-void render_bg(SDL_Renderer* renderer) 
+void render_bg(SDL_Renderer* renderer)
 {
-	for (int i = 0; i <= WINDOW_HEIGHT / RECT_SIZE; i++)
-	{
-		for (int j = 0; j <= WINDOW_WIDTH / RECT_SIZE; j++)
-		{
-			SDL_Rect bg_rect = create_rect();
-			bg_rect.x = ( -16 + RECT_SIZE * j);
-			bg_rect.y = -2 + RECT_SIZE * i;
-			bg_rect.w = RECT_SIZE;
-			bg_rect.h = RECT_SIZE;
+	SDL_Rect bg_rect = create_rect();
+	bg_rect.x = 0;
+	bg_rect.y = 0;
+	bg_rect.w = WINDOW_WIDTH;
+	bg_rect.h = WINDOW_HEIGHT;
 
-			if (j % 2 == 0) 
-			{
-				SDL_SetRenderDrawColor(renderer, 0x8b, 0xb4, 0xd9, 255);
-				SDL_RenderFillRect(renderer, &bg_rect);
-				SDL_RenderDrawRect(renderer, &bg_rect);
-			}
-			else if (i % 2 == 0) 
-			{
-				SDL_SetRenderDrawColor(renderer, 0x8b, 0xb4, 0xd9, 255);
-				SDL_RenderFillRect(renderer, &bg_rect);
-				SDL_RenderDrawRect(renderer, &bg_rect);
-			}
-			else 
-			{
-				SDL_SetRenderDrawColor(renderer, 0x8b, 0xd9, 0xd2, 255);
-				SDL_RenderFillRect(renderer, &bg_rect);
-				SDL_RenderDrawRect(renderer, &bg_rect);
-			}
-		}
-	}
+	SDL_SetRenderDrawColor(renderer, 0x8b, 0xb4, 0xd9, 255);
+	SDL_RenderFillRect(renderer, &bg_rect);
+	SDL_RenderDrawRect(renderer, &bg_rect);
+
 }
 
 int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, bool reverse) 
@@ -432,11 +412,14 @@ int main(int argc, char** argv)
 	uint32_t previous_time = SDL_GetTicks();
 	uint32_t current_time;
 	float delta_time;
+	uint32_t frame_count = 0;
+	uint32_t last_second = previous_time;
 
 	float step_time = 0;
 	float step_limit = 1;
 
 	int gravity = 1;
+
 	bool disable_ghost = false;
 	bool pause = false;
 	
@@ -452,8 +435,17 @@ int main(int argc, char** argv)
 	{
 		current_time = SDL_GetTicks();
 		delta_time = (current_time - previous_time) / 1000.0f;
+		previous_time = current_time;
+
 		if (pause) delta_time = 0;
 		step_time += delta_time;
+
+		frame_count++;
+		if (current_time - last_second >= 1000) {
+			printf("FPS: %d\n", frame_count);
+			frame_count = 0;
+			last_second = current_time;
+		}
 
 		while (SDL_PollEvent(&event))
 		{	
@@ -657,7 +649,7 @@ int main(int argc, char** argv)
 		// Rendering
 		SDL_RenderClear(renderer);
 		
-		render_bg(renderer, delta_time);
+		render_bg(renderer);
 
 		render_grid_area(renderer);
 
@@ -689,7 +681,7 @@ int main(int argc, char** argv)
 		
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 		SDL_RenderPresent(renderer);
-		previous_time = current_time;
+		
 	}
 	free(entities_v);
 	free(entities_p);
