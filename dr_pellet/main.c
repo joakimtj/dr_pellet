@@ -100,25 +100,59 @@ void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
 	set_grid_position_rect(get_rect(grid[pl->right.row][pl->right.column]), pl->right.row, pl->right.column);
 }
 
-int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r) 
+int check_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
 {
-	int collisions = 0;
-	if ((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player))
-	{
-		puts("Left collision");
-		collisions++;
-	}
-	if ((grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player))
-	{
-		puts("Right collision");
-		collisions++;
-	}
-	return collisions;
+	if (grid[i][j].c_entity) return 1;
+	return 0;
 }
 
-void check_virus(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl) 
+int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r) 
 {
-	// TODO: Implement this bro lol	
+	
+
+	if (((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player)) ||
+		((grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player)))
+	{
+		puts("In check_cell_collision return 1.");
+		return 1;
+	}
+	return 0;
+}
+
+int get_left_row(pill* pl)
+{
+	return pl->left.row;
+}
+
+int get_left_column(pill* pl)
+{
+	return pl->left.column;
+}
+
+int get_right_row(pill* pl)
+{
+	return pl->right.row;
+}
+
+int get_right_column(pill* pl)
+{
+	return pl->right.column;
+}
+
+entity_type get_left_type(pill* pl)
+{
+	return pl->left.h_entity->type;
+}
+
+entity* get_grid_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
+{
+	return grid[i][j].c_entity;
+}
+
+void clear_virus_below(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl) 
+{
+	// TODO: Implement this bro lol
+
 }
 
 void enable_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
@@ -144,10 +178,11 @@ void move_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, i
 	// These temporary pointers allows the player blocks to move without respect to any order of operations.
 	entity* tmp_1 = pl->left.h_entity;
 	entity* tmp_2 = pl->right.h_entity;
-	
-	disable_pill(grid, pl);
-	remove_pill(grid, pl);
 
+	remove_pill(grid, pl);
+	disable_pill(grid, pl);
+	
+	
 	pl->left.row = pl->left.row + row_axis_l;
 	pl->left.column = pl->left.column + column_axis_l;
 	pl->right.row = pl->right.row + row_axis_r;
@@ -453,8 +488,7 @@ int main(int argc, char** argv)
 				}
 				else {
 					set_player_position_rect(grid, &pl);
-					printf("Left: i=%d j=%d\n", pl.left.row, pl.left.column);
-					printf("Right: i=%d j=%d\n", pl.right.row, pl.right.column);
+					
 					rot += 1;
 				}
 			}
@@ -469,8 +503,7 @@ int main(int argc, char** argv)
 				}
 				else {
 					set_player_position_rect(grid, &pl);
-					printf("Left: i=%d j=%d\n", pl.left.row, pl.left.column);
-					printf("Right: i=%d j=%d\n", pl.right.row, pl.right.column);	
+						
 				}
 			}
 
@@ -484,9 +517,8 @@ int main(int argc, char** argv)
 				}
 				else
 				{
-					check_virus(grid, &pl);
 					pl.active = false;
-					printf("Key-S: Collision.\n");
+				
 				}
 			}
 
@@ -532,6 +564,8 @@ int main(int argc, char** argv)
 		// Sets new active pill
 		if (!pl.active) 
 		{
+		
+
 			pill_count += 2;
 			
 			disable_pill(grid, &pl);
@@ -541,6 +575,7 @@ int main(int argc, char** argv)
 
 			if (difference_left > 0) {
 				pl.left.row = difference_left;
+				
 			}
 			else {
 				pl.left.row = 0;
@@ -556,7 +591,14 @@ int main(int argc, char** argv)
 			pl.left.h_entity = &entities_p[pill_count];
 			pl.right.h_entity = &entities_p[pill_count + 1];
 
-			if (check_cell_collision(grid, &pl, pl.left.row, pl.left.column, pl.right.row, pl.right.column)) 
+			/*
+			* is_player does not behave as expected(?) when the current row is the top row. (row = GRID_ROWS)
+			* This causes check_cell_collision to never report a collision as it checks that flag and the 
+			* existence of an entity to determine a collision.
+			* To circumvent this I only check if that cell contains an entity.
+			* Hope this won't back-fire in the future :)
+			*/
+			if (check_cell_entity(grid, pl.left.row, pl.left.column) || check_cell_entity(grid, pl.right.row, pl.right.column))
 			{
 				quit = true;
 				printf("Oh no... ! You lost !\n");
@@ -564,6 +606,7 @@ int main(int argc, char** argv)
 			else 
 			{
 				move_player(grid, &pl, 0, 0, 0, 0);
+
 				set_player_position_rect(grid, &pl);
 
 				pl.active = true;
@@ -576,12 +619,15 @@ int main(int argc, char** argv)
 			{
 				if (!(check_cell_collision(grid, &pl, 0, LEFT, 0, LEFT)))
 				{
+					
 					if (pl.left.column + dir_x >= 0 && pl.right.column + dir_x >= 0)
 					{
 						move_player(grid, &pl, 0, dir_x, 0, dir_x);
 						set_player_position_rect(grid, &pl);
 					}
-				}
+				} else 
+				printf("Coll_check ret: %d\n", check_cell_collision(grid, &pl, pl.left.row, pl.left.column, pl.right.row, pl.right.column));
+
 			}
 			if (dir_x == RIGHT)
 			{
@@ -603,14 +649,13 @@ int main(int argc, char** argv)
 			set_player_position_rect(grid, &pl);
 			if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL, gravity, NEUTRAL)) && ((pl.left.row + gravity < GRID_ROWS) && pl.right.row + gravity < GRID_ROWS))
 			{
+				printf("step nigger: %d", pl.left.row);
 				move_player(grid, &pl, gravity, 0, gravity, 0);
 				set_player_position_rect(grid, &pl);
 			}
 			else 
 			{
-				check_virus(grid, &pl);
 				pl.active = false;
-				printf("Step-time Collision.\n");
 			}
 			step_time = 0;
 		}
@@ -650,6 +695,12 @@ int main(int argc, char** argv)
 		
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 		SDL_RenderPresent(renderer);
+	}
+
+	for (int i = 0; i < GRID_ROWS; i++) {
+		for (int j = 0; j < GRID_COLUMNS; j++) {
+			printf("Row: %d, Column: %d, is_player: %d\n", i, j, grid[i][j].is_player);
+		}
 	}
 	free(entities_v);
 	free(entities_p);
