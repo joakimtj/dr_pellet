@@ -65,7 +65,7 @@ struct {
 struct {
 	half left;
 	half right;
-	rotation roto;
+	rotation state;
 	bool active;
 } typedef pill;
 
@@ -106,10 +106,13 @@ int check_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
 	return 0;
 }
 
+int check_cell_player(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
+{
+	return grid[i][j].is_player;
+}
+
 int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r) 
 {
-	
-
 	if (((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player)) ||
 		((grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player)))
 	{
@@ -151,8 +154,51 @@ entity* get_grid_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
 
 void clear_virus_below(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl) 
 {
-	// TODO: Implement this bro lol
+	int left_row = get_left_row(pl);
+	int left_column = get_left_column(pl);
 
+	int to_check = 1;
+	int total = 0;
+
+	for (int i = left_row; i < i + to_check; i++)
+	{
+		if (i < GRID_ROWS - 1)
+		{
+			if (grid[i][left_column].c_entity)
+			{
+				puts("Line 170. CVB.");
+				if (grid[left_row][left_column].c_entity->type == grid[i][left_column].c_entity->type)
+				{
+					to_check++;
+					total++;
+				}
+				else break;
+			}
+			else 
+			{
+				printf("Not an entity. Row was %d\n", left_row);
+				break;
+			}
+		}
+		else break;
+	}
+	printf("Total: %d\n", total);
+	if (total > 3)
+	{
+		for (int i = 0; i < total; i++)
+		{
+			if (i < GRID_ROWS - 1)
+			{
+				if (check_cell_entity(grid, i + left_row, left_column))
+				{	
+					printf("Attempt delete row: %d\n", i);
+					grid[i + left_row][left_column].c_entity = NULL;
+				}
+				else break;
+			}
+			else break;
+		}
+	}
 }
 
 void enable_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
@@ -181,8 +227,7 @@ void move_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, i
 
 	remove_pill(grid, pl);
 	disable_pill(grid, pl);
-	
-	
+
 	pl->left.row = pl->left.row + row_axis_l;
 	pl->left.column = pl->left.column + column_axis_l;
 	pl->right.row = pl->right.row + row_axis_r;
@@ -199,7 +244,6 @@ void move_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, i
 
 int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, bool reverse)
 {
-	// These temporary pointers allows the player blocks to move without respect to any order of operations.
 	int row_axis_l = 0, column_axis_l = 0;
 	int row_axis_r = 0, column_axis_r = 0;
 	switch (*rot) {
@@ -488,7 +532,6 @@ int main(int argc, char** argv)
 				}
 				else {
 					set_player_position_rect(grid, &pl);
-					
 					rot += 1;
 				}
 			}
@@ -503,7 +546,6 @@ int main(int argc, char** argv)
 				}
 				else {
 					set_player_position_rect(grid, &pl);
-						
 				}
 			}
 
@@ -517,6 +559,7 @@ int main(int argc, char** argv)
 				}
 				else
 				{
+					clear_virus_below(grid, &pl);
 					pl.active = false;
 				
 				}
@@ -606,7 +649,6 @@ int main(int argc, char** argv)
 			else 
 			{
 				move_player(grid, &pl, 0, 0, 0, 0);
-
 				set_player_position_rect(grid, &pl);
 
 				pl.active = true;
@@ -625,9 +667,7 @@ int main(int argc, char** argv)
 						move_player(grid, &pl, 0, dir_x, 0, dir_x);
 						set_player_position_rect(grid, &pl);
 					}
-				} else 
-				printf("Coll_check ret: %d\n", check_cell_collision(grid, &pl, pl.left.row, pl.left.column, pl.right.row, pl.right.column));
-
+				} 
 			}
 			if (dir_x == RIGHT)
 			{
@@ -649,12 +689,12 @@ int main(int argc, char** argv)
 			set_player_position_rect(grid, &pl);
 			if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL, gravity, NEUTRAL)) && ((pl.left.row + gravity < GRID_ROWS) && pl.right.row + gravity < GRID_ROWS))
 			{
-				printf("step nigger: %d", pl.left.row);
 				move_player(grid, &pl, gravity, 0, gravity, 0);
 				set_player_position_rect(grid, &pl);
 			}
 			else 
 			{
+				clear_virus_below(grid, &pl);
 				pl.active = false;
 			}
 			step_time = 0;
