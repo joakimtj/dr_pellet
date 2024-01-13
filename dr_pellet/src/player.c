@@ -5,7 +5,7 @@ pill init_pill(entity* entities_p)
 	half left = { &entities_p[0], 0, GRID_COLUMNS / 2 - 1 };
 	half right = { &entities_p[1], 0, GRID_COLUMNS / 2 };
 
-	return (pill) { left, right, FIRST, NEUTRAL, true };
+	return (pill) { left, right, FIRST, true };
 }
 
 bool get_pill_active(pill* pl) 
@@ -16,16 +16,6 @@ bool get_pill_active(pill* pl)
 bool set_pill_active(pill* pl, bool value)
 {
 	pl->active = value;
-}
-
-direction get_direction(pill* pl)
-{
-	return pl->heading;
-}
-
-direction set_direction(pill* pl, direction value)
-{
-	pl->heading = value;
 }
 
 rotation get_rotation_state(pill* pl)
