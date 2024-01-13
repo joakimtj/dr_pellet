@@ -182,7 +182,7 @@ void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
 	set_grid_position_rect(get_rect(grid[pl->right.row][pl->right.column]), pl->right.row, pl->right.column);
 }
 
-void move_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r)
+void move_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r)
 {
 	// These temporary pointers allows the player blocks to move without respect to any order of operations.
 	entity* tmp_1 = pl->left.h_entity;
@@ -205,7 +205,7 @@ void move_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, i
 	pl->right.h_entity = tmp_2;
 }
 
-int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, bool reverse)
+int rotate_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, bool reverse)
 {
 	int row_axis_l = 0, column_axis_l = 0;
 	int row_axis_r = 0, column_axis_r = 0;
@@ -249,7 +249,7 @@ int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, b
 	}
 	// Rotation collision
 	if (check_cell_collision(grid, pl, row_axis_l, column_axis_l, row_axis_r, column_axis_r)) return -1;
-	else move_player(grid, pl, row_axis_l, column_axis_l, row_axis_r, column_axis_r);
+	else move_player_grid(grid, pl, row_axis_l, column_axis_l, row_axis_r, column_axis_r);
 
 	return 0;
 }

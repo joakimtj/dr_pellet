@@ -113,7 +113,7 @@ int main(int argc, char** argv)
 		{	
 			if (event.key.keysym.sym == SDLK_e && event.key.state == SDL_PRESSED) {
 				if (rot > 3) rot = 0;
-				ret = rotate_player(grid, &pl, &rot, false);
+				ret = rotate_player_grid(grid, &pl, &rot, false);
 				if (ret != 0) {
 					puts("Can't move.");
 				}
@@ -126,7 +126,7 @@ int main(int argc, char** argv)
 			if (event.key.keysym.sym == SDLK_r && event.key.state == SDL_PRESSED) {
 				rot -= 1;
 				if (rot < 0) rot = 3;
-				ret = rotate_player(grid, &pl, &rot, true);
+				ret = rotate_player_grid(grid, &pl, &rot, true);
 				if (ret != 0) {
 					puts("Can't move.");
 					rot++;
@@ -151,7 +151,7 @@ int main(int argc, char** argv)
 				}
 				if (!return_left && !return_right)
 				{
-					move_player(grid, &pl, gravity, 0, gravity, 0);
+					move_player_grid(grid, &pl, gravity, 0, gravity, 0);
 					set_player_position_rect(grid, &pl);
 				}
 			}
@@ -236,7 +236,7 @@ int main(int argc, char** argv)
 			}
 			else 
 			{
-				move_player(grid, &pl, 0, 0, 0, 0);
+				move_player_grid(grid, &pl, 0, 0, 0, 0);
 				set_player_position_rect(grid, &pl);
 
 				pl.active = true;
@@ -252,7 +252,7 @@ int main(int argc, char** argv)
 					
 					if (pl.left.column + dir_x >= 0 && pl.right.column + dir_x >= 0)
 					{
-						move_player(grid, &pl, 0, dir_x, 0, dir_x);
+						move_player_grid(grid, &pl, 0, dir_x, 0, dir_x);
 						set_player_position_rect(grid, &pl);
 					}
 				} 
@@ -263,7 +263,7 @@ int main(int argc, char** argv)
 				{
 					if (pl.left.column + dir_x < GRID_COLUMNS && pl.right.column + dir_x < GRID_COLUMNS)
 					{
-						move_player(grid, &pl, 0, dir_x, 0, dir_x);
+						move_player_grid(grid, &pl, 0, dir_x, 0, dir_x);
 						set_player_position_rect(grid, &pl);
 					}
 				}
@@ -287,7 +287,7 @@ int main(int argc, char** argv)
 			}
 			if (!return_left && !return_right)
 			{
-				move_player(grid, &pl, gravity, 0, gravity, 0);
+				move_player_grid(grid, &pl, gravity, 0, gravity, 0);
 				set_player_position_rect(grid, &pl);
 			}
 			step_time = 0;

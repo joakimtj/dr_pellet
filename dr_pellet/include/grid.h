@@ -39,9 +39,9 @@ void remove_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
 
 void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
 
-void move_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r);
+void move_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r);
 
-int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, bool reverse);
+int rotate_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, bool reverse);
 
 int check_left_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l);
 
