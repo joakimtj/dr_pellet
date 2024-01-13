@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
+
 #include <SDL.h>
 #include <SDL_rect.h>
 #include <SDL_timer.h>
@@ -17,34 +18,34 @@
 #define RECT_SIZE 30
 #define PADDING 1
 
-enum {
+typedef enum {
 	SLOW,
 	NORMAL,
 	FAST,
 	VERY_FAST
-} typedef speed;
+} speed;
 
-enum {
+typedef enum {
 	FIRST,
 	SECOND,
 	THIRD,
 	FOURTH
-} typedef rotation;
+} rotation;
 
-enum {
+typedef enum  {
 	LEFT = -1,
 	NEUTRAL = 0,
 	RIGHT = 1
-} typedef direction;
+} direction;
 
-enum {
+typedef enum {
 	RED_VIRUS,
 	BLUE_VIRUS,
 	YELLOW_VIRUS,
 	RED_BLOCK,
 	BLUE_BLOCK,
 	YELLOW_BLOCK
-} typedef entity_type;
+} entity_type;
 
 struct {
 	entity_type type;
@@ -102,7 +103,8 @@ void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
 
 int check_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
 {
-	if (grid[i][j].c_entity) return 1;
+	if (grid[i][j].c_entity) 
+		return 1;
 	return 0;
 }
 
@@ -111,14 +113,24 @@ int check_cell_player(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
 	return grid[i][j].is_player;
 }
 
+int check_left_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l) 
+{
+	if ((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player))
+		return 1;
+	else return 0;
+}
+
+int check_right_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_r, int column_axis_r) 
+{
+	if ((grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player))
+		return 1;
+	else return 0;
+}
+
 int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r) 
 {
-	if (((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player)) ||
-		((grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player)))
-	{
-		puts("In check_cell_collision return 1.");
+	if (check_left_collision(grid, pl, row_axis_l, column_axis_l) || check_right_collision(grid, pl, row_axis_r, column_axis_r)) 
 		return 1;
-	}
 	return 0;
 }
 
@@ -152,48 +164,75 @@ entity* get_grid_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
 	return grid[i][j].c_entity;
 }
 
-void clear_virus_below(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl) 
+void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column) 
 {
-	int left_row = get_left_row(pl);
-	int left_column = get_left_column(pl);
+	int total_below = 0;
+	int total_above = -1; // This is done so that entity on row, column, isn't counted twice.
+	int total_sum = 0;
 
 	int to_check = 1;
-	int total = 0;
-
-	for (int i = left_row; i < i + to_check; i++)
+	for (int i = row; i < i + to_check; i++)
 	{
 		if (i < GRID_ROWS - 1)
 		{
-			if (grid[i][left_column].c_entity)
+			if (grid[i][column].c_entity)
 			{
-				puts("Line 170. CVB.");
-				if (grid[left_row][left_column].c_entity->type == grid[i][left_column].c_entity->type)
+				if (grid[row][column].c_entity->type == grid[i][column].c_entity->type)
 				{
 					to_check++;
-					total++;
+					total_below++;
 				}
 				else break;
 			}
-			else 
-			{
-				printf("Not an entity. Row was %d\n", left_row);
-				break;
-			}
+			else break;
 		}
 		else break;
 	}
-	printf("Total: %d\n", total);
-	if (total > 3)
+
+	to_check = 1;
+	for (int i = row; i > i - to_check; i--)
 	{
-		for (int i = 0; i < total; i++)
+		printf("In above\n");
+		if (i > 0)
 		{
-			if (i < GRID_ROWS - 1)
+			printf("Entity: %p\n", grid[i][column].c_entity);
+			if (grid[i][column].c_entity)
 			{
-				if (check_cell_entity(grid, i + left_row, left_column))
-				{	
-					printf("Attempt delete row: %d\n", i);
-					grid[i + left_row][left_column].c_entity = NULL;
+				if (grid[row][column].c_entity->type == grid[i][column].c_entity->type)
+				{
+					to_check++;
+					total_above++;
 				}
+				else break;
+			}
+			else break;
+		}
+		else break;
+	}
+	
+	total_sum = total_below + (total_above);
+	printf("Total below: %d\n", total_below);
+	printf("Total above: %d\n", total_above);
+	printf("Sum of total: %d\n", total_sum);
+	if (total_sum > 3)
+	{
+		for (int i = 0; i < total_below; i++)
+		{
+			if (i <= GRID_ROWS - 1)
+			{
+				if (check_cell_entity(grid, i + row, column))	
+					grid[i + row][column].c_entity = NULL;
+				else break;
+			}
+			else break;
+		}
+
+		for (int i = 0; i >= total_above; i++)
+		{
+			if (i >= 0)
+			{
+				if (check_cell_entity(grid, i - row, column)) 
+					grid[i - row][column].c_entity = NULL;
 				else break;
 			}
 			else break;
@@ -499,6 +538,9 @@ int main(int argc, char** argv)
 	bool pause = false;
 	
 	int ret = 0;
+	int return_left = 0;
+	int return_right = 0;
+
 
 	rotation rot = FIRST;
 
@@ -515,13 +557,14 @@ int main(int argc, char** argv)
 		if (pause) delta_time = 0;
 		step_time += delta_time;
 
+		/*
 		frame_count++;
 		if (current_time - last_second >= 1000) {
 			printf("FPS: %d\n", frame_count);
 			frame_count = 0;
 			last_second = current_time;
 		}
-
+		*/
 		while (SDL_PollEvent(&event))
 		{	
 			if (event.key.keysym.sym == SDLK_e && event.key.state == SDL_PRESSED) {
@@ -552,16 +595,20 @@ int main(int argc, char** argv)
 			if (event.key.keysym.sym == SDLK_s && event.key.state == SDL_PRESSED) {
 				step_time = 0;
 				set_player_position_rect(grid, &pl);
-				if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL, gravity, NEUTRAL)) && ((pl.left.row + gravity < GRID_ROWS) && pl.right.row + gravity < GRID_ROWS))
+				return_left = check_left_collision(grid, &pl, gravity, 0);
+				return_right = check_right_collision(grid, &pl, gravity, 0);
+				if (return_left) {
+					clear_virus_vertical(grid, &pl, get_left_row(&pl), get_left_column(&pl));
+					pl.active = false;
+				}
+				if (return_right) {
+					clear_virus_vertical(grid, &pl, get_right_row(&pl), get_right_column(&pl));
+					pl.active = false;
+				}
+				if (!return_left && !return_right)
 				{
 					move_player(grid, &pl, gravity, 0, gravity, 0);
 					set_player_position_rect(grid, &pl);
-				}
-				else
-				{
-					clear_virus_below(grid, &pl);
-					pl.active = false;
-				
 				}
 			}
 
@@ -607,8 +654,6 @@ int main(int argc, char** argv)
 		// Sets new active pill
 		if (!pl.active) 
 		{
-		
-
 			pill_count += 2;
 			
 			disable_pill(grid, &pl);
@@ -618,7 +663,6 @@ int main(int argc, char** argv)
 
 			if (difference_left > 0) {
 				pl.left.row = difference_left;
-				
 			}
 			else {
 				pl.left.row = 0;
@@ -687,15 +731,20 @@ int main(int argc, char** argv)
 		if (step_time > step_limit && pl.active)
 		{
 			set_player_position_rect(grid, &pl);
-			if (!(check_cell_collision(grid, &pl, gravity, NEUTRAL, gravity, NEUTRAL)) && ((pl.left.row + gravity < GRID_ROWS) && pl.right.row + gravity < GRID_ROWS))
+			return_left = check_left_collision(grid, &pl, gravity, 0);
+			return_right = check_right_collision(grid, &pl, gravity, 0);
+			if (return_left) {
+				clear_virus_vertical(grid, &pl, get_left_row(&pl), get_left_column(&pl));
+				pl.active = false;
+			}
+			if (return_right) {
+				clear_virus_vertical(grid, &pl, get_right_row(&pl), get_right_column(&pl));
+				pl.active = false;
+			}
+			if (!return_left && !return_right)
 			{
 				move_player(grid, &pl, gravity, 0, gravity, 0);
 				set_player_position_rect(grid, &pl);
-			}
-			else 
-			{
-				clear_virus_below(grid, &pl);
-				pl.active = false;
 			}
 			step_time = 0;
 		}
@@ -732,15 +781,8 @@ int main(int argc, char** argv)
 				}
 			}
 		}
-		
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 		SDL_RenderPresent(renderer);
-	}
-
-	for (int i = 0; i < GRID_ROWS; i++) {
-		for (int j = 0; j < GRID_COLUMNS; j++) {
-			printf("Row: %d, Column: %d, is_player: %d\n", i, j, grid[i][j].is_player);
-		}
 	}
 	free(entities_v);
 	free(entities_p);
