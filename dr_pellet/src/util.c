@@ -1,0 +1,19 @@
+#include "util.h"
+#include "stdlib.h"
+
+int get_random_integer(int i)
+{
+	return rand() % i;
+}
+
+SDL_Rect* get_rect(cell c)
+{
+	return &c.c_entity->rect;
+}
+
+SDL_Rect create_rect()
+{
+	#define DEFAULT_POS 0
+	SDL_Rect rect = { DEFAULT_POS + (PADDING + RECT_SIZE), DEFAULT_POS + (PADDING + RECT_SIZE), RECT_SIZE, RECT_SIZE };
+	return rect;
+}
