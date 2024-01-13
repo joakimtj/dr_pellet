@@ -2,7 +2,7 @@
 
 entity* init_entities(int mode, int n_entities)
 {	/*
-		@param int mode : 0 or 3. Determines which range of types to create. Virus or Block.
+	*	@param int mode : 0 or 3. Determines which range of types to create. Virus or Block.
 	*/
 	int RED_COUNT = 0, BLUE_COUNT = 0, YELLOW_COUNT = 0;
 	if (mode != 0 && mode != 3) {

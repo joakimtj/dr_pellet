@@ -5,10 +5,10 @@
 #include <time.h>
 
 #include "entity.h"
-#include "include/grid.h"
-#include "include/player.h"
-#include "include/util.h"
-#include "include/render.h"
+#include "util.h"
+#include "player.h"
+#include "grid.h"
+#include "render.h"
 
 #include <SDL.h>
 #include <SDL_rect.h>

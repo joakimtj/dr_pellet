@@ -5,25 +5,25 @@
 #include "grid.h"
 #include <stdbool.h>
 
-typedef enum {
+typedef enum rotation {
 	FIRST,
 	SECOND,
 	THIRD,
 	FOURTH
 } rotation;
 
-struct {
+typedef struct half {
 	entity* h_entity;
 	int row;
 	int column;
-} typedef half;
+} half;
 
-struct {
+typedef struct pill {
 	half left;
 	half right;
 	rotation state;
 	bool active;
-} typedef pill;
+} pill;
 
 pill init_pill(entity* entities_p);
 

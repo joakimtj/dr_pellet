@@ -4,6 +4,7 @@
 #define VIRUS_N 66 // The N viruses to be spawned on the grid.
 
 #include <SDL_rect.h>
+#include <stdio.h>
 
 typedef enum {
 	RED_VIRUS,

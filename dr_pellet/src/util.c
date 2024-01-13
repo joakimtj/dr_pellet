@@ -1,5 +1,4 @@
 #include "util.h"
-#include "stdlib.h"
 
 int get_random_integer(int i)
 {

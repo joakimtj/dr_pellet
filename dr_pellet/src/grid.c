@@ -1,4 +1,4 @@
-#include "grid.h"
+#include <grid.h>
 
 void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities)
 {

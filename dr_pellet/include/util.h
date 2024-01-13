@@ -2,6 +2,7 @@
 #define UTIL_H
 
 #include <SDL_rect.h>
+#include <stdlib.h>
 #include "grid.h"
 
 int get_random_integer(int i);

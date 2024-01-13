@@ -9,15 +9,15 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include "entity.h"
 #include "util.h"
-#include "render.h"
+#include "entity.h"
 #include "player.h"
+#include "render.h"
 
-struct {
+typedef struct cell {
 	entity* c_entity;
 	bool is_player;
-} typedef cell;
+} cell;
 
 void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities);
 
