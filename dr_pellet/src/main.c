@@ -4,17 +4,19 @@
 #include <stdbool.h>
 #include <time.h>
 
-#include "entity.h"
 #include "util.h"
+#include "render.h"
+#include "entity.h"
 #include "player.h"
 #include "grid.h"
-#include "render.h"
 
 #include <SDL.h>
 #include <SDL_rect.h>
 #include <SDL_timer.h>
 
 #define TITLE "Dr. Pellet"
+#define WINDOW_WIDTH 1200
+#define WINDOW_HEIGHT 800 
 
 typedef enum {
 	SLOW,

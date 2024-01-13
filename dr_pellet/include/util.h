@@ -3,11 +3,10 @@
 
 #include <SDL_rect.h>
 #include <stdlib.h>
-#include "grid.h"
+#include <stdio.h>
+#include <stdbool.h>
 
 int get_random_integer(int i);
-
-SDL_Rect* get_rect(cell c);
 
 SDL_Rect create_rect();
 

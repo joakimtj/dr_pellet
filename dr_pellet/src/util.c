@@ -5,11 +5,6 @@ int get_random_integer(int i)
 	return rand() % i;
 }
 
-SDL_Rect* get_rect(cell c)
-{
-	return &c.c_entity->rect;
-}
-
 SDL_Rect create_rect()
 {
 	#define DEFAULT_POS 0

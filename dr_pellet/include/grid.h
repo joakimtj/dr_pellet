@@ -8,11 +8,8 @@
 #define PADDING 1
 
 #include <stdio.h>
-#include <stdbool.h>
 #include "util.h"
-#include "entity.h"
 #include "player.h"
-#include "render.h"
 
 typedef struct cell {
 	entity* c_entity;
@@ -27,6 +24,8 @@ entity* get_grid_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j);
 
 void set_initial_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
 
+SDL_Rect* get_rect(cell c);
+
 int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r);
 
 void set_grid_position_rect(SDL_Rect* rect, int i, int j);
@@ -36,5 +35,21 @@ int check_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j);
 int check_cell_player(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j);
 
 int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r);
+
+void enable_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
+
+void disable_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
+
+void remove_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
+
+void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
+
+void move_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r);
+
+int rotate_player(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, bool reverse);
+
+int check_left_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l);
+
+int check_right_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_r, int column_axis_r);
 
 #endif
