@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 	srand(time(NULL));
 
 	entity* entities_v = init_entities(0, VIRUS_N);
-	entity* entities_p = init_entities(0, 128 * 2);
+	entity* entities_p = init_entities(3, 128 * 2);
 
 	cell grid[GRID_ROWS][GRID_COLUMNS];
 	init_grid(grid, entities_v);
@@ -47,6 +47,18 @@ int main(int argc, char** argv)
 	SDL_Surface* yellow_block_bmp = SDL_LoadBMP("assets/yellow_block.bmp");
 	SDL_Texture* yellow_block_t = SDL_CreateTextureFromSurface(renderer, yellow_block_bmp);
 	SDL_FreeSurface(yellow_block_bmp);
+
+	SDL_Surface* red_virus_bmp = SDL_LoadBMP("assets/red_virus.bmp");
+	SDL_Texture* red_virus_t = SDL_CreateTextureFromSurface(renderer, red_virus_bmp);
+	SDL_FreeSurface(red_virus_bmp);
+
+	SDL_Surface* blue_virus_bmp = SDL_LoadBMP("assets/blue_virus.bmp");
+	SDL_Texture* blue_virus_t = SDL_CreateTextureFromSurface(renderer, blue_virus_bmp);
+	SDL_FreeSurface(blue_virus_bmp);
+
+	SDL_Surface* yellow_virus_bmp = SDL_LoadBMP("assets/yellow_virus.bmp");
+	SDL_Texture* yellow_virus_t = SDL_CreateTextureFromSurface(renderer, yellow_virus_bmp);
+	SDL_FreeSurface(yellow_virus_bmp);
 
 	SDL_Surface* bg_bmp = SDL_LoadBMP("assets/bg.bmp");
 	SDL_Texture* bg_t = SDL_CreateTextureFromSurface(renderer, bg_bmp);
@@ -300,16 +312,28 @@ int main(int argc, char** argv)
 				// Virus greier 
 				if (grid[i][j].c_entity != NULL) 
 				{	
-					if (grid[i][j].c_entity->type == RED_VIRUS) {
+					if (grid[i][j].c_entity->type == RED_BLOCK) {
 						SDL_RenderCopy(renderer, red_block_t, NULL, get_rect(grid[i][j]));
 					}
 
-					if (grid[i][j].c_entity->type == BLUE_VIRUS) {
+					if (grid[i][j].c_entity->type == BLUE_BLOCK) {
 						SDL_RenderCopy(renderer, blue_block_t, NULL, get_rect(grid[i][j]));
+					}
+
+					if (grid[i][j].c_entity->type == YELLOW_BLOCK) {
+						SDL_RenderCopy(renderer, yellow_block_t, NULL, get_rect(grid[i][j]));
+					}
+
+					if (grid[i][j].c_entity->type == RED_VIRUS) {
+						SDL_RenderCopy(renderer, red_virus_t, NULL, get_rect(grid[i][j]));
+					}
+
+					if (grid[i][j].c_entity->type == BLUE_VIRUS) {
+						SDL_RenderCopy(renderer, blue_virus_t, NULL, get_rect(grid[i][j]));
 					}
 		
 					if (grid[i][j].c_entity->type == YELLOW_VIRUS) {
-						SDL_RenderCopy(renderer, yellow_block_t, NULL, get_rect(grid[i][j]));
+						SDL_RenderCopy(renderer, yellow_virus_t, NULL, get_rect(grid[i][j]));
 					}
 				}
 			}

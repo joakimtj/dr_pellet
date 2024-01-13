@@ -33,6 +33,12 @@ int check_cell_player(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j);
 
 int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r);
 
+void enable_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
+
+void disable_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
+
+void remove_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
+
 void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
 
 void move_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r);
