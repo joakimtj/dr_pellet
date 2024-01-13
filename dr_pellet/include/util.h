@@ -4,7 +4,7 @@
 #include <SDL_rect.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
+#include "config.h"
 
 int get_random_integer(int i);
 

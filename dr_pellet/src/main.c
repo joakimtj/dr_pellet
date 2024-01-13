@@ -14,10 +14,6 @@
 #include <SDL_rect.h>
 #include <SDL_timer.h>
 
-#define TITLE "Dr. Pellet"
-#define WINDOW_WIDTH 1200
-#define WINDOW_HEIGHT 800 
-
 typedef enum {
 	SLOW,
 	NORMAL,
@@ -53,23 +49,23 @@ int main(int argc, char** argv)
 
 	int pill_count = 2;
 
-	SDL_Surface* red_block_bmp = SDL_LoadBMP("../assets/red_block.bmp");
+	SDL_Surface* red_block_bmp = SDL_LoadBMP("assets/red_block.bmp");
 	SDL_Texture* red_block_t = SDL_CreateTextureFromSurface(renderer, red_block_bmp);
 	SDL_FreeSurface(red_block_bmp);
 
-	SDL_Surface* blue_block_bmp = SDL_LoadBMP("../assets/blue_block.bmp");
+	SDL_Surface* blue_block_bmp = SDL_LoadBMP("assets/blue_block.bmp");
 	SDL_Texture* blue_block_t = SDL_CreateTextureFromSurface(renderer, blue_block_bmp);
 	SDL_FreeSurface(blue_block_bmp);
 
-	SDL_Surface* yellow_block_bmp = SDL_LoadBMP("../assets/yellow_block.bmp");
+	SDL_Surface* yellow_block_bmp = SDL_LoadBMP("assets/yellow_block.bmp");
 	SDL_Texture* yellow_block_t = SDL_CreateTextureFromSurface(renderer, yellow_block_bmp);
 	SDL_FreeSurface(yellow_block_bmp);
 
-	SDL_Surface* bg_bmp = SDL_LoadBMP("../assets/bg.bmp");
+	SDL_Surface* bg_bmp = SDL_LoadBMP("assets/bg.bmp");
 	SDL_Texture* bg_t = SDL_CreateTextureFromSurface(renderer, bg_bmp);
 	SDL_FreeSurface(bg_bmp);
 
-	SDL_Surface* dr_pellet_bmp = SDL_LoadBMP("dr_pellet.bmp");
+	SDL_Surface* dr_pellet_bmp = SDL_LoadBMP("assets/dr_pellet.bmp");
 	SDL_Texture* dr_pellet_t = SDL_CreateTextureFromSurface(renderer, dr_pellet_bmp);
 	SDL_FreeSurface(dr_pellet_bmp);
 

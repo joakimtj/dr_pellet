@@ -2,6 +2,7 @@
 #define PLAYER_H
 
 #include "entity.h"
+#include "config.h"
 #include <stdbool.h>
 
 typedef enum rotation {

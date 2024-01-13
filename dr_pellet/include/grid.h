@@ -1,13 +1,8 @@
 #ifndef GRID_H
 #define GRID_H
 
-#define GRID_ROWS 16 // The height of the play-area.
-#define GRID_COLUMNS 8 // The width of the play-area.
-#define GRID_ROW_CLEARANCE 8 // Viruses will not spawn above or on this ROW.
-#define RECT_SIZE 30
-#define PADDING 1
-
 #include <stdio.h>
+#include "config.h"
 #include "util.h"
 #include "player.h"
 

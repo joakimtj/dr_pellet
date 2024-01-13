@@ -2,6 +2,7 @@
 #define RENDER_H
 
 #include <SDL.h>
+#include "config.h"
 #include "util.h"
 #include "grid.h"
 
