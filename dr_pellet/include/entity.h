@@ -21,4 +21,4 @@ struct {
 
 entity* init_entities(int mode, int n_entities);
 
-#endif
+#endif // ENTITY_H

@@ -10,4 +10,4 @@ int get_random_integer(int i);
 
 SDL_Rect create_rect();
 
-#endif
+#endif // UTIL_H

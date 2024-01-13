@@ -12,4 +12,4 @@ void render_grid_area(SDL_Renderer* renderer);
 
 void render_bg(SDL_Renderer* renderer);
 
-#endif
+#endif // RENDER_H

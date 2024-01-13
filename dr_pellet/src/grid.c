@@ -139,6 +139,13 @@ void set_grid_position_rect(SDL_Rect* rect, int i, int j)
 	rect->h = RECT_SIZE;
 }
 
+int check_grid_index_bounds(int i)
+{
+	if (i < GRID_ROWS)
+		return 1;
+	return 0;
+}
+
 int check_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
 {
 	if (grid[i][j].c_entity)
@@ -205,11 +212,11 @@ void move_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis
 	pl->right.h_entity = tmp_2;
 }
 
-int rotate_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation* rot, bool reverse)
+int rotate_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation rot, bool reverse)
 {
 	int row_axis_l = 0, column_axis_l = 0;
 	int row_axis_r = 0, column_axis_r = 0;
-	switch (*rot) {
+	switch (rot) {
 	case FIRST:
 		row_axis_l = -1;
 		column_axis_r = -1;

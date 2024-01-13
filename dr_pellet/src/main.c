@@ -14,19 +14,6 @@
 #include <SDL_rect.h>
 #include <SDL_timer.h>
 
-typedef enum {
-	SLOW,
-	NORMAL,
-	FAST,
-	VERY_FAST
-} speed;
-
-typedef enum  {
-	LEFT = -1,
-	NEUTRAL = 0,
-	RIGHT = 1
-} direction;
-
 int main(int argc, char** argv)
 {
 	SDL_Init(SDL_INIT_VIDEO);
@@ -72,8 +59,10 @@ int main(int argc, char** argv)
 	uint32_t previous_time = SDL_GetTicks();
 	uint32_t current_time;
 	float delta_time;
+
 	uint32_t frame_count = 0;
 	uint32_t last_second = previous_time;
+
 	float step_time = 0;
 	float step_limit = 1;
 
@@ -85,10 +74,8 @@ int main(int argc, char** argv)
 	int return_left = 0;
 	int return_right = 0;
 
-
 	rotation rot = FIRST;
 
-	speed fall_speed = NORMAL;
 	direction dir_x = NEUTRAL;
 
 	bool quit = false;
@@ -112,24 +99,24 @@ int main(int argc, char** argv)
 		while (SDL_PollEvent(&event))
 		{	
 			if (event.key.keysym.sym == SDLK_e && event.key.state == SDL_PRESSED) {
-				if (rot > 3) rot = 0;
-				ret = rotate_player_grid(grid, &pl, &rot, false);
+				if (get_rotation_state(&pl) > 3) set_rotation_state(&pl, 0);
+				ret = rotate_player_grid(grid, &pl, get_rotation_state(&pl), false);
 				if (ret != 0) {
 					puts("Can't move.");
 				}
 				else {
 					set_player_position_rect(grid, &pl);
-					rot += 1;
+					set_rotation_state(&pl, get_rotation_state(&pl) + 1);
 				}
 			}
 
 			if (event.key.keysym.sym == SDLK_r && event.key.state == SDL_PRESSED) {
-				rot -= 1;
-				if (rot < 0) rot = 3;
-				ret = rotate_player_grid(grid, &pl, &rot, true);
+				set_rotation_state(&pl, get_rotation_state(&pl) - 1);
+				if (get_rotation_state(&pl) < 0) set_rotation_state(&pl, 3);
+				ret = rotate_player_grid(grid, &pl, get_rotation_state(&pl), true);
 				if (ret != 0) {
 					puts("Can't move.");
-					rot++;
+					set_rotation_state(&pl, get_rotation_state(&pl) + 1);
 				}
 				else {
 					set_player_position_rect(grid, &pl);
@@ -151,17 +138,41 @@ int main(int argc, char** argv)
 				}
 				if (!return_left && !return_right)
 				{
-					move_player_grid(grid, &pl, gravity, 0, gravity, 0);
-					set_player_position_rect(grid, &pl);
+					if ((check_grid_index_bounds(get_left_row(&pl) + gravity)) && check_grid_index_bounds(get_right_row(&pl) + gravity))
+					{
+						move_player_grid(grid, &pl, gravity, 0, gravity, 0);
+						set_player_position_rect(grid, &pl);
+					}
+					else {
+						set_pill_active(&pl, false);
+					}
+				}
+				else
+				{
+					set_pill_active(&pl, false);
 				}
 			}
 
 			if (event.key.keysym.sym == SDLK_a && event.key.state == SDL_PRESSED) {
-				dir_x = LEFT;
+				if (!(check_cell_collision(grid, &pl, 0, LEFT, 0, LEFT)))
+				{
+					if (get_left_column(&pl) + LEFT >= 0 && get_right_column(&pl) + LEFT >= 0)
+					{
+						move_player_grid(grid, &pl, 0, LEFT, 0, LEFT);
+						set_player_position_rect(grid, &pl);
+					}
+				}
 			}
 
 			if (event.key.keysym.sym == SDLK_d && event.key.state == SDL_PRESSED) {
-				dir_x = RIGHT;
+				if (!(check_cell_collision(grid, &pl, 0, RIGHT, 0, RIGHT)))
+				{
+					if (get_left_column(&pl) + RIGHT < GRID_COLUMNS && get_right_column(&pl) + RIGHT < GRID_COLUMNS)
+					{
+						move_player_grid(grid, &pl, 0, RIGHT, 0, RIGHT);
+						set_player_position_rect(grid, &pl);
+					}
+				}
 			}
 
 			if (event.key.keysym.sym == SDLK_ESCAPE && event.key.state == SDL_PRESSED) {
@@ -196,7 +207,7 @@ int main(int argc, char** argv)
 		// Logic
 
 		// Sets new active pill
-		if (!pl.active) 
+		if (!get_pill_active(&pl)) 
 		{
 			pill_count += 2;
 			
@@ -243,52 +254,30 @@ int main(int argc, char** argv)
 			}
 		}
 
-		if (dir_x) 
-		{
-			if (dir_x == LEFT) 
-			{
-				if (!(check_cell_collision(grid, &pl, 0, LEFT, 0, LEFT)))
-				{
-					
-					if (pl.left.column + dir_x >= 0 && pl.right.column + dir_x >= 0)
-					{
-						move_player_grid(grid, &pl, 0, dir_x, 0, dir_x);
-						set_player_position_rect(grid, &pl);
-					}
-				} 
-			}
-			if (dir_x == RIGHT)
-			{
-				if (!(check_cell_collision(grid, &pl, 0, RIGHT, 0, RIGHT)))
-				{
-					if (pl.left.column + dir_x < GRID_COLUMNS && pl.right.column + dir_x < GRID_COLUMNS)
-					{
-						move_player_grid(grid, &pl, 0, dir_x, 0, dir_x);
-						set_player_position_rect(grid, &pl);
-					}
-				}
-			}
-			dir_x = NEUTRAL;
-		}
-
 		// Gravity is applied here.
-		if (step_time > step_limit && pl.active)
+		if (step_time > step_limit && get_pill_active(&pl))
 		{
 			set_player_position_rect(grid, &pl);
 			return_left = check_left_collision(grid, &pl, gravity, 0);
 			return_right = check_right_collision(grid, &pl, gravity, 0);
 			if (return_left) {
 				clear_virus_vertical(grid, &pl, get_left_row(&pl), get_left_column(&pl));
-				pl.active = false;
 			}
 			if (return_right) {
 				clear_virus_vertical(grid, &pl, get_right_row(&pl), get_right_column(&pl));
-				pl.active = false;
 			}
 			if (!return_left && !return_right)
 			{
-				move_player_grid(grid, &pl, gravity, 0, gravity, 0);
-				set_player_position_rect(grid, &pl);
+				if (check_grid_index_bounds(get_left_row(&pl) + gravity) && check_grid_index_bounds(get_right_row(&pl) + gravity))
+				{
+					move_player_grid(grid, &pl, gravity, 0, gravity, 0);
+					set_player_position_rect(grid, &pl);
+				}
+				else set_pill_active(&pl, false);
+			}
+			else
+			{
+				set_pill_active(&pl, false);
 			}
 			step_time = 0;
 		}
