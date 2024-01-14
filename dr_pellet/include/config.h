@@ -12,6 +12,7 @@
 #define RECT_SIZE 30
 #define PADDING 1
 
+#define PILL_N 128
 #define VIRUS_N 66 // The N viruses to be spawned on the grid.
 
 #endif // CONFIG_H

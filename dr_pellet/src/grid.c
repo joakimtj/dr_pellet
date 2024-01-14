@@ -35,6 +35,23 @@ void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities)
 	printf("in func, init_grid()\nentities set to grid: %d\n", entity_count);
 }
 
+int check_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
+{
+	if (grid[i][j].c_entity)
+		return 1;
+	return 0;
+}
+
+entity* get_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
+{
+	return grid[i][j].c_entity;
+}
+
+entity_type get_cell_type(cell grid[GRID_ROWS][GRID_COLUMNS], int row, int column)
+{
+	return grid[row][column].c_entity->type;
+}
+
 void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column)
 {
 	int total_below = 0;
@@ -46,9 +63,9 @@ void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row,
 	{
 		if (i < GRID_ROWS - 1)
 		{
-			if (grid[i][column].c_entity)
+			if (check_cell_entity(grid, i, column))
 			{
-				if (grid[row][column].c_entity->type == grid[i][column].c_entity->type)
+				if (get_cell_type(grid, row, column) == get_cell_type(grid, i, column) || (get_cell_type(grid, row, column) - 3) == get_cell_type(grid, i, column))
 				{
 					to_check++;
 					total_below++;
@@ -69,7 +86,7 @@ void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row,
 			printf("Entity: %p\n", grid[i][column].c_entity);
 			if (grid[i][column].c_entity)
 			{
-				if (grid[row][column].c_entity->type == grid[i][column].c_entity->type)
+				if (grid[row][column].c_entity->type == grid[i][column].c_entity->type || (grid[row][column].c_entity->type - 3) == grid[i][column].c_entity->type)
 				{
 					to_check++;
 					total_above++;
@@ -111,11 +128,6 @@ void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row,
 	}
 }
 
-entity* get_grid_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
-{
-	return grid[i][j].c_entity;
-}
-
 void set_initial_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
 {
 	grid[pl->left.row][pl->left.column].c_entity = pl->left.h_entity;
@@ -139,16 +151,27 @@ void set_grid_position_rect(SDL_Rect* rect, int i, int j)
 	rect->h = RECT_SIZE;
 }
 
+void interpolate_grid_position_rect(SDL_Rect* rect, int start_i, int end_i, int j, float interp_factor)
+{
+	if (end_i > GRID_ROWS) return -1;
+	// Calculate the starting and ending y positions
+	int start_y = (WINDOW_HEIGHT / 4) + (PADDING + RECT_SIZE) * start_i;
+	int end_y = (WINDOW_HEIGHT / 4) + (PADDING + RECT_SIZE) * end_i;
+
+	// Set x position (remains the same as in set_grid_position_rect)
+	rect->x = (WINDOW_WIDTH / 2) - (GRID_ROWS * RECT_SIZE) + (PADDING + RECT_SIZE) * j;
+
+	// Interpolate y position
+	rect->y = start_y + (int)((end_y - start_y) * interp_factor);
+
+	// Set width and height
+	rect->w = RECT_SIZE;
+	rect->h = RECT_SIZE;
+}
+
 int check_grid_index_bounds(int i)
 {
 	if (i < GRID_ROWS)
-		return 1;
-	return 0;
-}
-
-int check_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
-{
-	if (grid[i][j].c_entity)
 		return 1;
 	return 0;
 }
@@ -212,6 +235,45 @@ void move_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis
 	pl->right.h_entity = tmp_2;
 }
 
+int check_left_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l)
+{
+	if ((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player))
+		return 1;
+	else return 0;
+}
+
+int check_right_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_r, int column_axis_r)
+{
+	if ((grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player))
+		return 1;
+	else return 0;
+}
+
+void update_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int gravity)
+{
+	if (check_left_collision(grid, pl, gravity, 0))
+	{
+		clear_virus_vertical(grid, pl, get_left_row(pl), get_left_column(pl));
+		set_pill_active(pl, false);
+	}
+
+	if (check_right_collision(grid, pl, gravity, 0))
+	{
+		clear_virus_vertical(grid, pl, get_right_row(pl), get_right_column(pl));
+		set_pill_active(pl, false);
+	}
+
+	if (get_pill_active(pl))
+	{
+		if ((check_grid_index_bounds(get_left_row(pl) + gravity)) && check_grid_index_bounds(get_right_row(pl) + gravity))
+		{
+			move_player_grid(grid, pl, gravity, 0, gravity, 0);
+			set_player_position_rect(grid, pl);
+		}
+		else set_pill_active(pl, false);
+	}
+}
+
 int rotate_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation rot, bool reverse)
 {
 	int row_axis_l = 0, column_axis_l = 0;
@@ -259,18 +321,4 @@ int rotate_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation ro
 	else move_player_grid(grid, pl, row_axis_l, column_axis_l, row_axis_r, column_axis_r);
 
 	return 0;
-}
-
-int check_left_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l)
-{
-	if ((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player))
-		return 1;
-	else return 0;
-}
-
-int check_right_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_r, int column_axis_r)
-{
-	if ((grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].c_entity) && !(grid[pl->right.row + row_axis_r][pl->right.column + column_axis_r].is_player))
-		return 1;
-	else return 0;
 }

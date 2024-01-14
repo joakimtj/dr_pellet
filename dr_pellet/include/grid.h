@@ -13,9 +13,11 @@ typedef struct cell {
 
 void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities);
 
-void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column);
+entity* get_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j);
 
-entity* get_grid_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j);
+entity_type get_cell_type(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j);
+
+void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column);
 
 void set_initial_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
 
@@ -24,6 +26,8 @@ SDL_Rect* get_rect(cell c);
 int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r);
 
 void set_grid_position_rect(SDL_Rect* rect, int i, int j);
+
+void interpolate_grid_position_rect(SDL_Rect* rect, int start_i, int end_i, int j, float interp_factor);
 
 int check_grid_index_bounds(int i);
 
@@ -41,12 +45,14 @@ void remove_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
 
 void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
 
-void move_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r);
-
-int rotate_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation rot, bool reverse);
-
 int check_left_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l);
 
 int check_right_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_r, int column_axis_r);
+
+void move_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r);
+
+void update_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int gravity);
+
+int rotate_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation rot, bool reverse);
 
 #endif // GRID_H

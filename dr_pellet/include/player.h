@@ -36,17 +36,33 @@ bool get_pill_active(pill* pl);
 
 bool set_pill_active(pill* pl, bool value);
 
+entity* get_left_entity(pill* pl);
+
+entity* get_right_entity(pill* pl);
+
+void set_left_entity(pill* pl, entity* entities_p, int pill_count);
+
+void set_right_entity(pill* pl, entity* entities_p, int pill_count);
+
 rotation get_rotation_state(pill* pl);
 
 void set_rotation_state(pill* pl, rotation r_state);
 
 int get_left_row(pill* pl);
 
+int set_left_row(pill* pl, int row);
+
 int get_left_column(pill* pl);
 
 int get_right_row(pill* pl);
 
+int set_right_row(pill* pl, int row);
+
 int get_right_column(pill* pl);
+
+int calculate_difference_left(pill* pl);
+
+int calculate_difference_right(pill* pl);
 
 entity_type get_left_type(pill* pl);
 

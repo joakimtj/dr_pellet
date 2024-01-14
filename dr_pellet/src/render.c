@@ -57,6 +57,103 @@ void render_grid_area(SDL_Renderer* renderer)
 	SDL_RenderDrawRect(renderer, &outline_rect);
 }
 
+void render_grid_entities(SDL_Renderer* renderer, cell grid[GRID_ROWS][GRID_COLUMNS], SDL_Texture* entity_sheet_t)
+{
+	SDL_Rect red_block = { 0, 30, RECT_SIZE, RECT_SIZE };
+	SDL_Rect blue_block = { 30, 30, RECT_SIZE, RECT_SIZE };
+	SDL_Rect yellow_block = { 60, 30, RECT_SIZE, RECT_SIZE };
+	SDL_Rect red_virus = { 0, 0, RECT_SIZE, RECT_SIZE };
+	SDL_Rect blue_virus = { 30, 0, RECT_SIZE, RECT_SIZE };
+	SDL_Rect yellow_virus = { 60, 0, RECT_SIZE, RECT_SIZE };
+
+	for (int i = 0; i < GRID_ROWS; i++)
+	{
+		for (int j = 0; j < GRID_COLUMNS; j++)
+		{
+			if (check_cell_entity(grid, i, j) && !grid[i][j].is_player)
+			{
+				switch (get_cell_type(grid, i, j))
+				{
+				case RED_BLOCK:
+					SDL_RenderCopy(renderer, entity_sheet_t, &red_block, get_rect(grid[i][j]));
+					break;
+
+				case BLUE_BLOCK:
+					SDL_RenderCopy(renderer, entity_sheet_t, &blue_block, get_rect(grid[i][j]));
+					break;
+
+				case YELLOW_BLOCK:
+					SDL_RenderCopy(renderer, entity_sheet_t, &yellow_block, get_rect(grid[i][j]));
+					break;
+
+				case RED_VIRUS:
+					SDL_RenderCopy(renderer, entity_sheet_t, &red_virus, get_rect(grid[i][j]));
+					break;
+
+				case BLUE_VIRUS:
+					SDL_RenderCopy(renderer, entity_sheet_t, &blue_virus, get_rect(grid[i][j]));
+					break;
+
+				case YELLOW_VIRUS:
+					SDL_RenderCopy(renderer, entity_sheet_t, &yellow_virus, get_rect(grid[i][j]));
+					break;
+				}
+			}
+		}
+	}
+}
+
+void render_player(SDL_Renderer* renderer, pill* pl, SDL_Texture* entity_sheet_t)
+{
+	SDL_Rect red_block = { 0, 30, RECT_SIZE, RECT_SIZE };
+	SDL_Rect blue_block = { 30, 30, RECT_SIZE, RECT_SIZE };
+	SDL_Rect yellow_block = { 60, 30, RECT_SIZE, RECT_SIZE };
+
+	switch (pl->left.h_entity->type)
+	{
+	case RED_BLOCK:
+		SDL_RenderCopy(renderer, entity_sheet_t, &red_block, &pl->left.h_entity->rect);
+		break;
+
+	case BLUE_BLOCK:
+		SDL_RenderCopy(renderer, entity_sheet_t, &blue_block, &pl->left.h_entity->rect);
+		break;
+
+	case YELLOW_BLOCK:
+		SDL_RenderCopy(renderer, entity_sheet_t, &yellow_block, &pl->left.h_entity->rect);
+		break;
+	}
+
+	switch (pl->right.h_entity->type)
+	{
+	case RED_BLOCK:
+		SDL_RenderCopy(renderer, entity_sheet_t, &red_block, &pl->right.h_entity->rect);
+		break;
+
+	case BLUE_BLOCK:
+		SDL_RenderCopy(renderer, entity_sheet_t, &blue_block, &pl->right.h_entity->rect);
+		break;
+
+	case YELLOW_BLOCK:
+		SDL_RenderCopy(renderer, entity_sheet_t, &yellow_block, &pl->right.h_entity->rect);
+		break;
+	}
+}
+
+void render_grace(SDL_Renderer* renderer, SDL_Rect* bar, float width, float delta_time)
+{	
+	if ((int)width > 100) {
+		width = 100;
+	}
+	bar->w = (int) width;
+	printf("%f\n", width);
+	printf("%d\n", bar->w);
+	if (bar->w < 2500)
+		SDL_SetRenderDrawColor(renderer, 0x8b, 0xff, 0x3d, 255);
+	else SDL_SetRenderDrawColor(renderer, 0xff, 0x2a, 0x3d, 255);
+	SDL_RenderFillRect(renderer, bar);
+}
+
 void render_bg(SDL_Renderer* renderer)
 {
 	SDL_Rect bg_rect = create_rect();
