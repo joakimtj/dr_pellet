@@ -21,17 +21,24 @@ typedef enum game_state {
 
 int main(int argc, char** argv)
 {
+	srand(time(NULL));
+
 	SDL_Init(SDL_INIT_VIDEO);
 
+
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+
 	SDL_Window* window = SDL_CreateWindow(TITLE, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
-	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	SDL_Renderer* renderer = SDL_CreateRenderer(window, 1, SDL_RENDERER_ACCELERATED);
+
+	SDL_Surface* icon_bmp = SDL_LoadBMP("assets/icon.bmp");
+	SDL_SetWindowIcon(window, icon_bmp);
+	SDL_FreeSurface(icon_bmp);
 
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 	SDL_Texture** texture_a = init_textures(renderer, 2);
 
 	SDL_Event event;
-
-	srand(time(NULL));
 
 	entity* entities_v = init_entities(0, VIRUS_N);
 	entity* entities_p = init_entities(3, PILL_N * 2);
@@ -210,9 +217,11 @@ int main(int argc, char** argv)
 		
 		render_bg(renderer);
 
-		render_grid_area(renderer);
+		// render_grid_area(renderer);
 
 		render_character_area(renderer, texture_a[1]);
+
+		render_grid_edge(renderer);
 
 		render_grid_entities(renderer, grid, texture_a[0]);
 

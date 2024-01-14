@@ -149,6 +149,22 @@ void set_grid_position_rect(SDL_Rect* rect, int i, int j)
 	rect->h = RECT_SIZE;
 }
 
+void set_grid_position_rect_bg(SDL_Rect* rect, int i, int j)
+{
+	rect->x = (WINDOW_WIDTH / 2) - (GRID_ROWS * RECT_SIZE) + (PADDING + RECT_SIZE) * j;
+	rect->y = (WINDOW_HEIGHT / 4) + (PADDING + RECT_SIZE) * i;
+	rect->w = RECT_SIZE + 1;
+	rect->h = RECT_SIZE + 1;
+}
+
+void set_grid_position_rect_edge(SDL_Rect* rect, int i, int j)
+{
+	rect->x = - 32 + (WINDOW_WIDTH / 2) - (GRID_ROWS * RECT_SIZE) + (PADDING + RECT_SIZE) * j;
+	rect->y = - 32 + (WINDOW_HEIGHT / 4) + (PADDING + RECT_SIZE) * i;
+	rect->w = RECT_SIZE + 2;
+	rect->h = RECT_SIZE + 2;
+}
+
 void interpolate_grid_position_rect(SDL_Rect* rect, int start_i, int end_i, int j, float interp_factor)
 {
 	if (end_i > GRID_ROWS) return -1;
@@ -179,9 +195,9 @@ int check_cell_player(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
 	return grid[i][j].is_player;
 }
 
-int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r)
+int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_L, int column_L, int row_R, int column_R)
 {
-	if (check_left_collision(grid, pl, row_axis_l, column_axis_l) || check_right_collision(grid, pl, row_axis_r, column_axis_r))
+	if (check_left_collision(grid, pl, row_L, column_L) || check_right_collision(grid, pl, row_R, column_R))
 		return 1;
 	return 0;
 }

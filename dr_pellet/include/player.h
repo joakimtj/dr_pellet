@@ -62,6 +62,8 @@ int get_right_column(pill* pl);
 
 entity_type get_left_type(pill* pl);
 
+void set_left_type(pill* pl, entity_type type);
+
 /*
 * The below two functions calculates the difference in rows between
 * the left and right segments of the 'pill'.

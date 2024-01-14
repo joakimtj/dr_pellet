@@ -60,7 +60,6 @@ int get_left_column(pill* pl)
 
 int set_left_row(pill* pl, int value)
 {
-	printf("Left: %d\n", value);
 	pl->left.row = value;
 }
 
@@ -71,13 +70,22 @@ int get_right_row(pill* pl)
 
 int set_right_row(pill* pl, int value)
 {
-	printf("Right: %d\n", value);
 	pl->right.row = value;
 }
 
 int get_right_column(pill* pl)
 {
 	return pl->right.column;
+}
+
+entity_type get_left_type(pill* pl)
+{
+	return pl->left.h_entity->type;
+}
+
+void set_left_type(pill* pl, entity_type type)
+{
+	pl->left.h_entity->type = type;
 }
 
 int calculate_difference_left(pill* pl)
@@ -102,9 +110,4 @@ int calculate_difference_right(pill* pl)
 	else {
 		return 0;
 	}
-}
-
-entity_type get_left_type(pill* pl)
-{
-	return pl->left.h_entity->type;
 }

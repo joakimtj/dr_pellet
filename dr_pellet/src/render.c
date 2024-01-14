@@ -64,7 +64,7 @@ void render_grid_area(SDL_Renderer* renderer)
 	SDL_Rect grid_rect;
 	grid_rect.x = WINDOW_WIDTH / 5;
 	grid_rect.y = WINDOW_HEIGHT / 4;
-	grid_rect.w = GRID_COLUMNS * RECT_SIZE + PADDING + 6;
+	grid_rect.w = GRID_COLUMNS * RECT_SIZE + PADDING + 6; // Magic number to fit the rect neatly behind the entities.
 	grid_rect.h = GRID_ROWS * RECT_SIZE + PADDING + 10;
 
 	SDL_SetRenderDrawColor(renderer, 0x00, 0x0, 0x00, 200);
@@ -80,6 +80,46 @@ void render_grid_area(SDL_Renderer* renderer)
 
 	SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 255);
 	SDL_RenderDrawRect(renderer, &outline_rect);
+}
+
+void render_grid_edge(SDL_Renderer* renderer)
+{
+	SDL_Rect rect = (SDL_Rect) {0, 0, 32, 32};
+
+	SDL_Rect rect_a[3][3];
+
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++)
+		{
+			rect_a[i][j] = (SDL_Rect){ 32 * j, 32 * i, 32, 32 };
+		}
+	}
+
+	SDL_Surface* grid_bg_sheet_bmp = SDL_LoadBMP("assets/grid_bg_sheet.bmp");
+	SDL_Texture* grid_bg_sheet_t = SDL_CreateTextureFromSurface(renderer, grid_bg_sheet_bmp);
+	SDL_FreeSurface(grid_bg_sheet_bmp);
+
+	for (int i = 0; i < GRID_ROWS + 2; i++)
+	{
+		for (int j = 0; j < GRID_COLUMNS + 2; j++)
+		{
+			set_grid_position_rect_edge(&rect, i, j);
+
+			if (i == 0 && j == 0) SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[0][0], &rect);
+			else if (i == 0 && j == GRID_COLUMNS + 1) SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[0][2], &rect);
+
+			else if (i == 0 && (j > 0 && j < GRID_COLUMNS + 1)) SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[0][1], &rect);
+			else if (i == GRID_ROWS + 1 && j == 0) SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[2][0], &rect);
+			else if (i == GRID_ROWS + 1 && j == GRID_COLUMNS + 1) SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[2][2], &rect);
+
+			else if ((i > 0 || i < GRID_ROWS + 1) && j == 0 && i != 0) SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[1][0], &rect);
+			else if ((i > 0 || i < GRID_ROWS + 1) && j == GRID_COLUMNS + 1) SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[1][2], &rect);
+
+			else if (i == GRID_ROWS + 1 && (j > 0 && j < GRID_COLUMNS + 1)) SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[2][1], &rect);
+			else SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[1][1], &rect);
+
+		}
+	}
 }
 
 void render_grid_entities(SDL_Renderer* renderer, cell grid[GRID_ROWS][GRID_COLUMNS], SDL_Texture* entity_sheet_t)
