@@ -1,10 +1,16 @@
 #ifndef RENDER_H
 #define RENDER_H
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <SDL.h>
+
 #include "config.h"
 #include "util.h"
 #include "grid.h"
+
+SDL_Texture** init_textures(SDL_Renderer* renderer, int allocated);
 
 void render_character_area(SDL_Renderer* renderer, SDL_Texture* dr_pellet_t);
 

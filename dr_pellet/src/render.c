@@ -1,5 +1,30 @@
 #include "render.h"
 
+SDL_Texture** init_textures(SDL_Renderer* renderer, int allocated)
+{
+	if (allocated < 0) {
+		printf("That is not a valid value for allocated.\n");
+		return -1;
+	}
+	SDL_Surface* entity_sheet_bmp = SDL_LoadBMP("assets/entity_sheet.bmp");
+	SDL_Texture* entity_sheet_t = SDL_CreateTextureFromSurface(renderer, entity_sheet_bmp);
+	SDL_FreeSurface(entity_sheet_bmp);
+
+	SDL_Surface* dr_pellet_bmp = SDL_LoadBMP("assets/dr_pellet.bmp");
+	SDL_Texture* dr_pellet_t = SDL_CreateTextureFromSurface(renderer, dr_pellet_bmp);
+	SDL_FreeSurface(dr_pellet_bmp);
+
+	SDL_Texture** texture_a = malloc(sizeof(SDL_Texture*) * allocated);
+	if (texture_a == NULL) {
+		fprintf(stderr, "Failed to allocate memory.\n");
+		exit(EXIT_FAILURE);
+	}
+	texture_a[0] = entity_sheet_t;
+	texture_a[1] = dr_pellet_t;
+
+	return texture_a;
+}
+
 void render_character_area(SDL_Renderer* renderer, SDL_Texture* dr_pellet_t)
 {
 	SDL_Rect area_rect;

@@ -10,18 +10,24 @@ entity* init_entities(int mode, int n_entities)
 		return -1;
 	}
 	entity* entities = malloc(sizeof(entity) * n_entities);
-	entity_type e_type;
+	if (entities == NULL) {
+		fprintf(stderr, "Failed to allocate memory in init_entities().\n");
+		exit(EXIT_FAILURE);
+	}
+	
 	for (int i = 0; i < n_entities; i++)
 	{
-		e_type = (rand() % 3 + mode);
+		entity_type e_type = (rand() % 3 + mode);
 		switch (e_type)
 		{
 		case RED_VIRUS:
 			RED_COUNT++;
 			break;
+
 		case BLUE_VIRUS:
 			BLUE_COUNT++;
 			break;
+
 		case YELLOW_VIRUS:
 			YELLOW_COUNT++;
 			break;

@@ -3,7 +3,6 @@
 void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities)
 {
 	int entity_count = 0;
-	int random_i;
 	for (int i = 0; i < GRID_ROWS; i++)
 	{
 		for (int j = 0; j < GRID_COLUMNS; j++)
@@ -12,7 +11,7 @@ void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities)
 			{
 				if (entity_count < VIRUS_N)
 				{
-					random_i = get_random_integer(2);
+					int random_i = get_random_integer(2);
 					if (random_i == 0) {
 						grid[i][j].c_entity = NULL;
 					}
@@ -32,7 +31,6 @@ void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities)
 			grid[i][j].is_player = false;
 		}
 	}
-	printf("in func, init_grid()\nentities set to grid: %d\n", entity_count);
 }
 
 int check_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
@@ -55,7 +53,7 @@ entity_type get_cell_type(cell grid[GRID_ROWS][GRID_COLUMNS], int row, int colum
 void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column)
 {
 	int total_below = 0;
-	int total_above = -1; // This is done so that entity on row, column, isn't counted twice.
+	int total_above = -1;
 	int total_sum = 0;
 
 	int to_check = 1;
@@ -212,7 +210,7 @@ void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
 	set_grid_position_rect(get_rect(grid[pl->right.row][pl->right.column]), pl->right.row, pl->right.column);
 }
 
-void move_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r)
+void move_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_L, int column_L, int row_R, int column_R)
 {
 	// These temporary pointers allows the player blocks to move without respect to any order of operations.
 	entity* tmp_1 = pl->left.h_entity;
@@ -221,10 +219,10 @@ void move_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis
 	remove_pill(grid, pl);
 	disable_pill(grid, pl);
 
-	pl->left.row = pl->left.row + row_axis_l;
-	pl->left.column = pl->left.column + column_axis_l;
-	pl->right.row = pl->right.row + row_axis_r;
-	pl->right.column = pl->right.column + column_axis_r;
+	pl->left.row = pl->left.row + row_L;
+	pl->left.column = pl->left.column + column_L;
+	pl->right.row = pl->right.row + row_R;
+	pl->right.column = pl->right.column + column_R;
 
 	enable_pill(grid, pl);
 
@@ -274,51 +272,42 @@ void update_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int gravit
 	}
 }
 
-int rotate_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation rot, bool reverse)
+int rotate_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, bool reverse)
 {
-	int row_axis_l = 0, column_axis_l = 0;
-	int row_axis_r = 0, column_axis_r = 0;
-	switch (rot) {
-	case FIRST:
-		row_axis_l = -1;
-		column_axis_r = -1;
-		break;
+	/*
+	* A pill has four rotational states, FIRST, SECOND, THIRD and FOURTH.
+	* These require their own bespoke transformations.
+	*/
 
-	case SECOND:
-		row_axis_l = 1;
-		column_axis_l = 1;
-		break;
+	int row_L = 0; int column_L = 0;
+	int row_R = 0; int column_R = 0;
 
-	case THIRD:
-		column_axis_l = -1;
-		row_axis_r = -1;
-		break;
+	direction r_state = get_rotation_state(pl);
+	switch (r_state) {
+		case FIRST: { row_L = -1; column_R = -1; } break;
 
-	case FOURTH:
-		row_axis_r = 1;
-		column_axis_r = 1;
-		break;
+		case SECOND: { row_L = 1; column_L = 1; } break;
+
+		case THIRD: { column_L = -1; row_R = -1; } break;
+
+		case FOURTH: { row_R = 1; column_R = 1; } break;
 	}
 
 	if (reverse) {
-		row_axis_l = -row_axis_l;
-		column_axis_l = -column_axis_l;
-		row_axis_r = -row_axis_r;
-		column_axis_r = -column_axis_r;
+		row_L = -row_L; column_L = -column_L;
+		row_R = -row_R; column_R = -column_R;
 	}
 	// Wall kick off ceiling
-	if (pl->left.row + row_axis_l < 0 || pl->right.row + row_axis_r < 0) {
-		row_axis_l++;
-		row_axis_r++;
+	if (get_left_row(pl) + row_L < 0 || get_right_row(pl) + row_R < 0) {
+		row_L++; row_R++;
 	}
 	// Wall kick off right wall
-	if (pl->left.column + column_axis_l >= GRID_COLUMNS - 1 && pl->right.column + column_axis_r >= GRID_COLUMNS - 1) {
-		column_axis_l--;
-		column_axis_r--;
+	if (get_left_column(pl) + column_L >= GRID_COLUMNS - 1 && get_right_column(pl) + column_R >= GRID_COLUMNS - 1) {
+		column_L--; column_R--;
 	}
-	// Rotation collision
-	if (check_cell_collision(grid, pl, row_axis_l, column_axis_l, row_axis_r, column_axis_r)) return -1;
-	else move_player_grid(grid, pl, row_axis_l, column_axis_l, row_axis_r, column_axis_r);
+	
+	if (check_cell_collision(grid, pl, row_L, column_L, row_R, column_R)) return -1;
+	else move_player_grid(grid, pl, row_L, column_L, row_R, column_R);
 
 	return 0;
 }

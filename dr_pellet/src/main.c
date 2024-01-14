@@ -22,9 +22,12 @@ typedef enum game_state {
 int main(int argc, char** argv)
 {
 	SDL_Init(SDL_INIT_VIDEO);
+
 	SDL_Window* window = SDL_CreateWindow(TITLE, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+	SDL_Texture** texture_a = init_textures(renderer, 2);
 
 	SDL_Event event;
 
@@ -38,20 +41,7 @@ int main(int argc, char** argv)
 
 	pill pl = init_pill(entities_p);
 	set_initial_pill(grid, &pl);
-
 	int pill_count = 2;
-
-	SDL_Surface* entity_sheet_bmp = SDL_LoadBMP("assets/entity_sheet.bmp");
-	SDL_Texture* entity_sheet_t = SDL_CreateTextureFromSurface(renderer, entity_sheet_bmp);
-	SDL_FreeSurface(entity_sheet_bmp);
-
-	SDL_Surface* bg_bmp = SDL_LoadBMP("assets/bg.bmp");
-	SDL_Texture* bg_t = SDL_CreateTextureFromSurface(renderer, bg_bmp);
-	SDL_FreeSurface(bg_bmp);
-
-	SDL_Surface* dr_pellet_bmp = SDL_LoadBMP("assets/dr_pellet.bmp");
-	SDL_Texture* dr_pellet_t = SDL_CreateTextureFromSurface(renderer, dr_pellet_bmp);
-	SDL_FreeSurface(dr_pellet_bmp);
 
 	uint32_t previous_time = SDL_GetTicks();
 	uint32_t current_time = 0.0f;
@@ -89,7 +79,7 @@ int main(int argc, char** argv)
 		if (get_pill_active(&pl))
 			step_time += delta_time;
 
-		if (step_time) interp_factor = step_time / step_limit;
+		if (step_time) interp_factor = step_time / step_limit; // Goes unused but it remains here.
 
 		if (!get_pill_active(&pl)) grace_period += delta_time;
 
@@ -104,7 +94,7 @@ int main(int argc, char** argv)
 		{	
 			if (event.key.keysym.sym == SDLK_e && event.key.state == SDL_PRESSED && get_pill_active(&pl) && state == RUNNING) {
 				if (get_rotation_state(&pl) > 3) set_rotation_state(&pl, 0);
-				ret = rotate_player_grid(grid, &pl, get_rotation_state(&pl), false);
+				ret = rotate_player_grid(grid, &pl, false);
 				if (ret != 0) {
 					puts("Can't move.");
 				}
@@ -117,7 +107,7 @@ int main(int argc, char** argv)
 			if (event.key.keysym.sym == SDLK_r && event.key.state == SDL_PRESSED && get_pill_active(&pl) && state == RUNNING) {
 				set_rotation_state(&pl, get_rotation_state(&pl) - 1);
 				if (get_rotation_state(&pl) < 0) set_rotation_state(&pl, 3);
-				ret = rotate_player_grid(grid, &pl, get_rotation_state(&pl), true);
+				ret = rotate_player_grid(grid, &pl, true);
 				if (ret != 0) {
 					puts("Can't move.");
 					set_rotation_state(&pl, get_rotation_state(&pl) + 1);
@@ -222,11 +212,11 @@ int main(int argc, char** argv)
 
 		render_grid_area(renderer);
 
-		render_character_area(renderer, dr_pellet_t);
+		render_character_area(renderer, texture_a[1]);
 
-		render_grid_entities(renderer, grid, entity_sheet_t);
+		render_grid_entities(renderer, grid, texture_a[0]);
 
-		render_player(renderer, &pl, entity_sheet_t);
+		render_player(renderer, &pl, texture_a[0]);
 
 		if (!get_pill_active(&pl))
 		{	

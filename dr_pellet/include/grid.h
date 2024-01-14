@@ -53,6 +53,6 @@ void move_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis
 
 void update_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int gravity);
 
-int rotate_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, rotation rot, bool reverse);
+int rotate_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, bool reverse);
 
 #endif // GRID_H

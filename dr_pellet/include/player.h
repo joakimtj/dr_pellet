@@ -60,10 +60,20 @@ int set_right_row(pill* pl, int row);
 
 int get_right_column(pill* pl);
 
+entity_type get_left_type(pill* pl);
+
+/*
+* The below two functions calculates the difference in rows between
+* the left and right segments of the 'pill'.
+* This is used when determining the starting position of a new pill
+* as a new pill retains it's rotation r_state.
+* 
+* @param pl A pointer to a pill struct. Must contain both left and right segments.
+* @return The difference between the left half's row and right half's row.
+*/
+
 int calculate_difference_left(pill* pl);
 
 int calculate_difference_right(pill* pl);
-
-entity_type get_left_type(pill* pl);
 
 #endif // PLAYER_H
