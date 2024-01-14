@@ -25,11 +25,7 @@ SDL_Rect* get_rect(cell c);
 
 int check_cell_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l, int row_axis_r, int column_axis_r);
 
-void set_grid_position_rect(SDL_Rect* rect, int i, int j);
-
-void set_grid_position_rect_bg(SDL_Rect* rect, int i, int j);
-
-void set_grid_position_rect_edge(SDL_Rect* rect, int i, int j);
+void set_grid_position_rect(SDL_Rect* rect, int i, int j, int offset);
 
 void interpolate_grid_position_rect(SDL_Rect* rect, int start_i, int end_i, int j, float interp_factor);
 

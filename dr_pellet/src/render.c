@@ -14,6 +14,10 @@ SDL_Texture** init_textures(SDL_Renderer* renderer, int allocated)
 	SDL_Texture* dr_pellet_t = SDL_CreateTextureFromSurface(renderer, dr_pellet_bmp);
 	SDL_FreeSurface(dr_pellet_bmp);
 
+	SDL_Surface* grid_bg_sheet_bmp = SDL_LoadBMP("assets/grid_bg_sheet.bmp");
+	SDL_Texture* grid_bg_sheet_t = SDL_CreateTextureFromSurface(renderer, grid_bg_sheet_bmp);
+	SDL_FreeSurface(grid_bg_sheet_bmp);
+
 	SDL_Texture** texture_a = malloc(sizeof(SDL_Texture*) * allocated);
 	if (texture_a == NULL) {
 		fprintf(stderr, "Failed to allocate memory.\n");
@@ -21,7 +25,7 @@ SDL_Texture** init_textures(SDL_Renderer* renderer, int allocated)
 	}
 	texture_a[0] = entity_sheet_t;
 	texture_a[1] = dr_pellet_t;
-
+	texture_a[2] = grid_bg_sheet_t;
 	return texture_a;
 }
 
@@ -61,11 +65,12 @@ void render_character_area(SDL_Renderer* renderer, SDL_Texture* dr_pellet_t)
 
 void render_grid_area(SDL_Renderer* renderer)
 {
+	// Unused.
 	SDL_Rect grid_rect;
 	grid_rect.x = WINDOW_WIDTH / 5;
 	grid_rect.y = WINDOW_HEIGHT / 4;
-	grid_rect.w = GRID_COLUMNS * RECT_SIZE + PADDING + 6; // Magic number to fit the rect neatly behind the entities.
-	grid_rect.h = GRID_ROWS * RECT_SIZE + PADDING + 10;
+	grid_rect.w = GRID_COLUMNS * RECT_SIZE + 6; // Magic number to fit the rect neatly behind the entities.
+	grid_rect.h = GRID_ROWS * RECT_SIZE + 10;
 
 	SDL_SetRenderDrawColor(renderer, 0x00, 0x0, 0x00, 200);
 	SDL_RenderFillRect(renderer, &grid_rect);
@@ -75,35 +80,31 @@ void render_grid_area(SDL_Renderer* renderer)
 	SDL_Rect outline_rect;
 	outline_rect.x = -1 + WINDOW_WIDTH / 5;
 	outline_rect.y = -1 + WINDOW_HEIGHT / 4;
-	outline_rect.w = GRID_COLUMNS * RECT_SIZE + PADDING + 6 + 2;
-	outline_rect.h = GRID_ROWS * RECT_SIZE + PADDING + 10 + 2;
+	outline_rect.w = GRID_COLUMNS * RECT_SIZE + 6 + 2;
+	outline_rect.h = GRID_ROWS * RECT_SIZE + 10 + 2;
 
 	SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 255);
 	SDL_RenderDrawRect(renderer, &outline_rect);
 }
 
-void render_grid_edge(SDL_Renderer* renderer)
+void render_grid_edge(SDL_Renderer* renderer, SDL_Texture* grid_bg_sheet_t)
 {
-	SDL_Rect rect = (SDL_Rect) {0, 0, 32, 32};
+	SDL_Rect rect = (SDL_Rect) {0, 0, 30, 30};
 
 	SDL_Rect rect_a[3][3];
 
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++)
 		{
-			rect_a[i][j] = (SDL_Rect){ 32 * j, 32 * i, 32, 32 };
+			rect_a[i][j] = (SDL_Rect){ 30 * j, 30 * i, 30, 30 };
 		}
 	}
-
-	SDL_Surface* grid_bg_sheet_bmp = SDL_LoadBMP("assets/grid_bg_sheet.bmp");
-	SDL_Texture* grid_bg_sheet_t = SDL_CreateTextureFromSurface(renderer, grid_bg_sheet_bmp);
-	SDL_FreeSurface(grid_bg_sheet_bmp);
 
 	for (int i = 0; i < GRID_ROWS + 2; i++)
 	{
 		for (int j = 0; j < GRID_COLUMNS + 2; j++)
 		{
-			set_grid_position_rect_edge(&rect, i, j);
+			set_grid_position_rect(&rect, i, j, -30);
 
 			if (i == 0 && j == 0) SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[0][0], &rect);
 			else if (i == 0 && j == GRID_COLUMNS + 1) SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[0][2], &rect);
@@ -116,8 +117,7 @@ void render_grid_edge(SDL_Renderer* renderer)
 			else if ((i > 0 || i < GRID_ROWS + 1) && j == GRID_COLUMNS + 1) SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[1][2], &rect);
 
 			else if (i == GRID_ROWS + 1 && (j > 0 && j < GRID_COLUMNS + 1)) SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[2][1], &rect);
-			else SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[1][1], &rect);
-
+			else if ((i > 0 || i < GRID_ROWS + 1) && (j > 0 && j < GRID_COLUMNS + 1)) SDL_RenderCopy(renderer, grid_bg_sheet_t, &rect_a[1][1], &rect);
 		}
 	}
 }
@@ -211,8 +211,6 @@ void render_grace(SDL_Renderer* renderer, SDL_Rect* bar, float width, float delt
 		width = 100;
 	}
 	bar->w = (int) width;
-	printf("%f\n", width);
-	printf("%d\n", bar->w);
 	if (bar->w < 2500)
 		SDL_SetRenderDrawColor(renderer, 0x8b, 0xff, 0x3d, 255);
 	else SDL_SetRenderDrawColor(renderer, 0xff, 0x2a, 0x3d, 255);

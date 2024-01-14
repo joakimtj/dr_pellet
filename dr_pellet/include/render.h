@@ -16,7 +16,7 @@ void render_character_area(SDL_Renderer* renderer, SDL_Texture* dr_pellet_t);
 
 void render_grid_area(SDL_Renderer* renderer);
 
-void render_grid_edge(SDL_Renderer* renderer);
+void render_grid_edge(SDL_Renderer* renderer, SDL_Texture* grid_bg_sheet_t);
 
 void render_grid_entities(SDL_Renderer* renderer, cell grid[GRID_ROWS][GRID_COLUMNS], SDL_Texture* entity_sheet_t);
 

@@ -17,7 +17,7 @@ void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities)
 					}
 					else {
 						grid[i][j].c_entity = &entities[entity_count];
-						set_grid_position_rect(&grid[i][j].c_entity->rect, i, j);
+						set_grid_position_rect(&grid[i][j].c_entity->rect, i, j, 0);
 						entity_count++;
 					}
 				}
@@ -132,8 +132,8 @@ void set_initial_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
 	grid[pl->right.row][pl->right.column].c_entity = pl->right.h_entity;
 	grid[pl->left.row][pl->left.column].is_player = true;
 	grid[pl->right.row][pl->right.column].is_player = true;
-	set_grid_position_rect(get_rect(grid[pl->left.row][pl->left.column]), pl->left.row, pl->left.column);
-	set_grid_position_rect(get_rect(grid[pl->right.row][pl->right.column]), pl->right.row, pl->right.column);
+	set_grid_position_rect(get_rect(grid[pl->left.row][pl->left.column]), pl->left.row, pl->left.column, 0);
+	set_grid_position_rect(get_rect(grid[pl->right.row][pl->right.column]), pl->right.row, pl->right.column, 0);
 }
 
 SDL_Rect* get_rect(cell c)
@@ -141,39 +141,25 @@ SDL_Rect* get_rect(cell c)
 	return &c.c_entity->rect;
 }
 
-void set_grid_position_rect(SDL_Rect* rect, int i, int j)
+void set_grid_position_rect(SDL_Rect* rect, int i, int j, int offset)
 {
-	rect->x = (WINDOW_WIDTH / 2) - (GRID_ROWS * RECT_SIZE) + (PADDING + RECT_SIZE) * j;
-	rect->y = (WINDOW_HEIGHT / 4) + (PADDING + RECT_SIZE) * i;
+	float xpos = offset + (WINDOW_WIDTH / 1.5f) - (GRID_ROWS * RECT_SIZE) + RECT_SIZE * j;
+	rect->x = (int)xpos;
+	float ypos = offset + (WINDOW_HEIGHT / 5.5f) + RECT_SIZE * i;
+	rect->y = (int) ypos;
 	rect->w = RECT_SIZE;
 	rect->h = RECT_SIZE;
-}
-
-void set_grid_position_rect_bg(SDL_Rect* rect, int i, int j)
-{
-	rect->x = (WINDOW_WIDTH / 2) - (GRID_ROWS * RECT_SIZE) + (PADDING + RECT_SIZE) * j;
-	rect->y = (WINDOW_HEIGHT / 4) + (PADDING + RECT_SIZE) * i;
-	rect->w = RECT_SIZE + 1;
-	rect->h = RECT_SIZE + 1;
-}
-
-void set_grid_position_rect_edge(SDL_Rect* rect, int i, int j)
-{
-	rect->x = - 32 + (WINDOW_WIDTH / 2) - (GRID_ROWS * RECT_SIZE) + (PADDING + RECT_SIZE) * j;
-	rect->y = - 32 + (WINDOW_HEIGHT / 4) + (PADDING + RECT_SIZE) * i;
-	rect->w = RECT_SIZE + 2;
-	rect->h = RECT_SIZE + 2;
 }
 
 void interpolate_grid_position_rect(SDL_Rect* rect, int start_i, int end_i, int j, float interp_factor)
 {
 	if (end_i > GRID_ROWS) return -1;
 	// Calculate the starting and ending y positions
-	int start_y = (WINDOW_HEIGHT / 4) + (PADDING + RECT_SIZE) * start_i;
-	int end_y = (WINDOW_HEIGHT / 4) + (PADDING + RECT_SIZE) * end_i;
+	int start_y = (WINDOW_HEIGHT / 4) + RECT_SIZE * start_i;
+	int end_y = (WINDOW_HEIGHT / 4) + RECT_SIZE * end_i;
 
 	// Set x position (remains the same as in set_grid_position_rect)
-	rect->x = (WINDOW_WIDTH / 2) - (GRID_ROWS * RECT_SIZE) + (PADDING + RECT_SIZE) * j;
+	rect->x = (WINDOW_WIDTH / 2) - (GRID_ROWS * RECT_SIZE) + RECT_SIZE * j;
 
 	// Interpolate y position
 	rect->y = start_y + (int)((end_y - start_y) * interp_factor);
@@ -222,8 +208,8 @@ void remove_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
 
 void set_player_position_rect(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl)
 {
-	set_grid_position_rect(get_rect(grid[pl->left.row][pl->left.column]), pl->left.row, pl->left.column);
-	set_grid_position_rect(get_rect(grid[pl->right.row][pl->right.column]), pl->right.row, pl->right.column);
+	set_grid_position_rect(get_rect(grid[pl->left.row][pl->left.column]), pl->left.row, pl->left.column, 0);
+	set_grid_position_rect(get_rect(grid[pl->right.row][pl->right.column]), pl->right.row, pl->right.column, 0);
 }
 
 void move_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_L, int column_L, int row_R, int column_R)

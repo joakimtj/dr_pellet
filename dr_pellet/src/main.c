@@ -25,6 +25,13 @@ int main(int argc, char** argv)
 
 	SDL_Init(SDL_INIT_VIDEO);
 
+	int numRenderDrivers = SDL_GetNumRenderDrivers();
+	printf("Available Render Drivers:\n");
+	for (int i = 0; i < numRenderDrivers; i++) {
+		SDL_RendererInfo info;
+		SDL_GetRenderDriverInfo(i, &info);
+		printf("%d: %s\n", i, info.name);
+	}
 
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
@@ -57,7 +64,8 @@ int main(int argc, char** argv)
 	uint32_t frame_count = 0;
 	uint32_t last_second = previous_time;
 
-	SDL_Rect bar = { 400, 0, 0, 15 };
+	SDL_Rect bar = { 402, 200, 50, 50 };
+
 	float width = 0;
 
 	float step_time = 0;
@@ -221,7 +229,7 @@ int main(int argc, char** argv)
 
 		render_character_area(renderer, texture_a[1]);
 
-		render_grid_edge(renderer);
+		render_grid_edge(renderer, texture_a[2]);
 
 		render_grid_entities(renderer, grid, texture_a[0]);
 
