@@ -67,10 +67,12 @@ void render_grid_area(SDL_Renderer* renderer)
 {
 	// Unused.
 	SDL_Rect grid_rect;
-	grid_rect.x = WINDOW_WIDTH / 5;
-	grid_rect.y = WINDOW_HEIGHT / 4;
-	grid_rect.w = GRID_COLUMNS * RECT_SIZE + 6; // Magic number to fit the rect neatly behind the entities.
-	grid_rect.h = GRID_ROWS * RECT_SIZE + 10;
+	float xpos = 0 + GRID_POSITION_X;
+	grid_rect.x = (int)xpos;
+	float ypos = 0 + GRID_POSITION_Y;
+	grid_rect.y = (int)ypos;
+	grid_rect.w = RECT_SIZE * GRID_COLUMNS;
+	grid_rect.h = RECT_SIZE * GRID_ROWS;
 
 	SDL_SetRenderDrawColor(renderer, 0x00, 0x0, 0x00, 200);
 	SDL_RenderFillRect(renderer, &grid_rect);
@@ -78,10 +80,12 @@ void render_grid_area(SDL_Renderer* renderer)
 
 	// White Outline
 	SDL_Rect outline_rect;
-	outline_rect.x = -1 + WINDOW_WIDTH / 5;
-	outline_rect.y = -1 + WINDOW_HEIGHT / 4;
-	outline_rect.w = GRID_COLUMNS * RECT_SIZE + 6 + 2;
-	outline_rect.h = GRID_ROWS * RECT_SIZE + 10 + 2;
+	xpos = -1 + GRID_POSITION_X;
+	outline_rect.x = (int)xpos;
+	ypos = -1 + GRID_POSITION_Y;
+	outline_rect.y = (int)ypos;
+	outline_rect.w = RECT_SIZE * GRID_COLUMNS + 2;
+	outline_rect.h = RECT_SIZE * GRID_ROWS + 2;
 
 	SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 255);
 	SDL_RenderDrawRect(renderer, &outline_rect);

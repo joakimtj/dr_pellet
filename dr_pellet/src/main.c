@@ -219,17 +219,16 @@ int main(int argc, char** argv)
 				break;
 		}
 		
-
 		// Rendering
 		SDL_RenderClear(renderer);
 		
 		render_bg(renderer);
 
-		// render_grid_area(renderer);
+		render_grid_area(renderer);
 
 		render_character_area(renderer, texture_a[1]);
 
-		render_grid_edge(renderer, texture_a[2]);
+		// render_grid_edge(renderer, texture_a[2]);
 
 		render_grid_entities(renderer, grid, texture_a[0]);
 

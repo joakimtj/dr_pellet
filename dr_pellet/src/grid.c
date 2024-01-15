@@ -143,9 +143,9 @@ SDL_Rect* get_rect(cell c)
 
 void set_grid_position_rect(SDL_Rect* rect, int i, int j, int offset)
 {
-	float xpos = offset + (WINDOW_WIDTH / 1.5f) - (GRID_ROWS * RECT_SIZE) + RECT_SIZE * j;
+	float xpos = offset + GRID_POSITION_X + RECT_SIZE * j;
 	rect->x = (int)xpos;
-	float ypos = offset + (WINDOW_HEIGHT / 5.5f) + RECT_SIZE * i;
+	float ypos = offset + GRID_POSITION_Y + RECT_SIZE * i;
 	rect->y = (int) ypos;
 	rect->w = RECT_SIZE;
 	rect->h = RECT_SIZE;
