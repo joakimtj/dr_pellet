@@ -53,7 +53,7 @@ entity_type get_cell_type(cell grid[GRID_ROWS][GRID_COLUMNS], int row, int colum
 void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column)
 {
 	int total_below = 0;
-	int total_above = -1;
+	int total_above = 0;
 	int total_sum = 0;
 
 	int to_check = 1;
@@ -61,9 +61,9 @@ void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row,
 	{
 		if (i < GRID_ROWS - 1)
 		{
-			if (check_cell_entity(grid, i, column))
+			if (check_cell_entity(grid, i + 1, column))
 			{
-				if (get_cell_type(grid, row, column) == get_cell_type(grid, i, column) || (get_cell_type(grid, row, column) - 3) == get_cell_type(grid, i, column))
+				if (get_cell_type(grid, row, column) == get_cell_type(grid, i + 1, column) || (get_cell_type(grid, row, column) - 3) == get_cell_type(grid, i + 1, column))
 				{
 					to_check++;
 					total_below++;
@@ -78,13 +78,11 @@ void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row,
 	to_check = 1;
 	for (int i = row; i > i - to_check; i--)
 	{
-		printf("In above\n");
 		if (i > 0)
 		{
-			printf("Entity: %p\n", grid[i][column].c_entity);
-			if (grid[i][column].c_entity)
+			if (check_cell_entity(grid, i - 1, column))
 			{
-				if (grid[row][column].c_entity->type == grid[i][column].c_entity->type || (grid[row][column].c_entity->type - 3) == grid[i][column].c_entity->type)
+				if (get_cell_type(grid, row, column) == get_cell_type(grid, i - 1, column) || (get_cell_type(grid, row, column) - 3) == get_cell_type(grid, i - 1, column))
 				{
 					to_check++;
 					total_above++;
@@ -96,13 +94,13 @@ void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row,
 		else break;
 	}
 
-	total_sum = total_below + (total_above);
+	total_sum = total_below + total_above + 1; // +1 refers to the block that connected.
 	printf("Total below: %d\n", total_below);
 	printf("Total above: %d\n", total_above);
 	printf("Sum of total: %d\n", total_sum);
 	if (total_sum > 3)
 	{
-		for (int i = 0; i < total_below; i++)
+		for (int i = 1; i <= total_below; i++)
 		{
 			if (i <= GRID_ROWS - 1)
 			{
@@ -113,16 +111,17 @@ void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row,
 			else break;
 		}
 
-		for (int i = 0; i >= total_above; i--)
+		for (int i = 1; i <= total_above; i++)
 		{
 			if (i >= 0)
 			{
-				if (check_cell_entity(grid, i - row, column))
-					grid[i - row][column].c_entity = NULL;
+				if (check_cell_entity(grid, - i + row, column))
+					grid[- i + row][column].c_entity = NULL;
 				else break;
 			}
 			else break;
 		}
+		grid[row][column].c_entity = NULL;
 	}
 }
 
@@ -235,9 +234,9 @@ void move_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_L, i
 	pl->right.h_entity = tmp_2;
 }
 
-int check_left_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_axis_l, int column_axis_l)
+int check_left_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_L, int column_L)
 {
-	if ((grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].c_entity) && !(grid[pl->left.row + row_axis_l][pl->left.column + column_axis_l].is_player))
+	if ((grid[pl->left.row + row_L][pl->left.column + column_L].c_entity) && !(grid[pl->left.row + row_L][pl->left.column + column_L].is_player))
 		return 1;
 	else return 0;
 }
@@ -266,11 +265,22 @@ void update_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int gravit
 	if (get_pill_active(pl))
 	{
 		if ((check_grid_index_bounds(get_left_row(pl) + gravity)) && check_grid_index_bounds(get_right_row(pl) + gravity))
-		{
+		{	
 			move_player_grid(grid, pl, gravity, 0, gravity, 0);
 			set_player_position_rect(grid, pl);
 		}
-		else set_pill_active(pl, false);
+		else
+		{
+			set_pill_active(pl, false);
+			if (check_left_collision(grid, pl, -1, 0))
+			{
+				clear_virus_vertical(grid, pl, get_left_row(pl), get_left_column(pl));
+			}
+			if (check_right_collision(grid, pl, -1, 0))
+			{
+				clear_virus_vertical(grid, pl, get_right_row(pl), get_right_column(pl));
+			}
+		}
 	}
 }
 
