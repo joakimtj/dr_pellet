@@ -19,6 +19,8 @@ void delete_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int row, int column)
 
 entity_type get_cell_type(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j);
 
+int check_cell_type(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j, entity_type type);
+
 void clear_virus_horizontal(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column);
 
 int check_entities_below(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column);

@@ -40,6 +40,13 @@ int check_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
 	return 0;
 }
 
+int check_cell_type(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j, entity_type type)
+{
+	if (grid[i][j].c_entity->type == type)
+		return 1;
+	return 0;
+}
+
 entity* get_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j)
 {
 	return grid[i][j].c_entity;
@@ -55,86 +62,6 @@ void delete_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int row, int column)
 	grid[row][column].c_entity = NULL;
 }
 
-
-void clear_virus_horizontal(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column)
-{
-	int has_cleared = 0;
-
-	int total_right = 0;
-	int total_left = 0;
-	int total_sum = 0;
-
-	int to_check = 1;
-	for (int i = column; i < i + to_check; i++)
-	{
-		if (i < GRID_COLUMNS - 1)
-		{
-			if (check_cell_entity(grid, row, i + 1))
-			{
-				if (get_cell_type(grid, row, column) == get_cell_type(grid, row, i + 1) || (get_cell_type(grid, row, column) - 3) == get_cell_type(grid, row, i + 1))
-				{
-					to_check++;
-					total_right++;
-				}
-				else break;
-			}
-			else break;
-		}
-		else break;
-	}
-
-	to_check = 1;
-	for (int i = column; i > i - to_check; i--)
-	{
-		if (i > 0)
-		{
-			if (check_cell_entity(grid, row, i - 1))
-			{
-				if (get_cell_type(grid, row, column) == get_cell_type(grid, row, i - 1) || (get_cell_type(grid, row, column) - 3) == get_cell_type(grid, row, i - 1))
-				{
-					to_check++;
-					total_left++;
-				}
-				else break;
-			}
-			else break;
-		}
-		else break;
-	}
-
-	total_sum = total_right + total_left + 1; // +1 refers to the player controlled pill that connected with whatever entity in the grid.
-	printf("Total right: %d\n", total_right);
-	printf("Total left: %d\n", total_left);
-	printf("Sum of total: %d\n", total_sum);
-	if (total_sum > 3)
-	{
-		for (int i = 1; i <= total_right; i++)
-		{
-			if (i + column <= GRID_COLUMNS - 1)
-			{
-				if (check_cell_entity(grid, row, i + column))
-					grid[row][i + column].c_entity = NULL;
-				else break;
-			}
-			else break;
-		}
-
-		for (int i = 1; i <= total_left; i++)
-		{
-			if (i >= 0)
-			{
-				if (check_cell_entity(grid, row, -i + column))
-					grid[row][-i + column].c_entity = NULL;
-				else break;
-			}
-			else break;
-		}
-		has_cleared = 1;
-	}
-	printf("has_cleared: %d\n", has_cleared);
-	return has_cleared;
-}
-
 int check_entities_below(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column)
 {
 	int total_below = 0;
@@ -146,7 +73,7 @@ int check_entities_below(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, 
 		{
 			if (check_cell_entity(grid, i + 1, column))
 			{
-				if (get_cell_type(grid, row, column) == get_cell_type(grid, i + 1, column) || (get_cell_type(grid, row, column) - 3) == get_cell_type(grid, i + 1, column))
+				if (check_cell_type(grid, i + 1, column, get_cell_type(grid, row, column)) || check_cell_type(grid, i + 1, column, get_cell_type(grid, row, column) - 3))
 				{
 					to_check++;
 					total_below++;
@@ -171,7 +98,7 @@ int check_entities_above(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, 
 		{
 			if (check_cell_entity(grid, i - 1, column))
 			{
-				if (get_cell_type(grid, row, column) == get_cell_type(grid, i - 1, column) || (get_cell_type(grid, row, column) - 3) == get_cell_type(grid, i - 1, column))
+				if (check_cell_type(grid, i - 1, column, get_cell_type(grid, row, column)) || check_cell_type(grid, i - 1, column, get_cell_type(grid, row, column) - 3))
 				{
 					to_check++;
 					total_above++;
@@ -196,8 +123,7 @@ int check_entities_right(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, 
 		{
 			if (check_cell_entity(grid, row, i + 1))
 			{
-				if (get_left_entity(pl) == check_cell_entity(grid, row, i + 1)) i++;
-				if (get_cell_type(grid, row, column) == get_cell_type(grid, row, i + 1) || (get_cell_type(grid, row, column) - 3) == get_cell_type(grid, row, i + 1))
+				if (check_cell_type(grid, row, i + 1, get_cell_type(grid, row, column)) || check_cell_type(grid, row, i + 1, get_cell_type(grid, row, column) - 3))
 				{
 					to_check++;
 					total_right++;
@@ -222,7 +148,7 @@ int check_entities_left(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, i
 		{
 			if (check_cell_entity(grid, row, i - 1))
 			{
-				if (get_cell_type(grid, row, column) == get_cell_type(grid, row, i - 1) || (get_cell_type(grid, row, column) - 3) == get_cell_type(grid, row, i - 1))
+				if (check_cell_type(grid, row, i - 1, get_cell_type(grid, row, column)) || check_cell_type(grid, row, i - 1, get_cell_type(grid, row, column) - 3))
 				{
 					to_check++;
 					total_left++;
@@ -465,13 +391,11 @@ void update_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int gravit
 	{
 		set_pill_active(pl, false);
 		clear_viruses(grid, pl, get_left_row(pl), get_left_column(pl));
-		clear_viruses(grid, pl, get_right_row(pl), get_right_column(pl));
 	}
 
 	if (check_right_collision(grid, pl, gravity, 0))
 	{
 		set_pill_active(pl, false);
-		clear_viruses(grid, pl, get_left_row(pl), get_left_column(pl));
 		clear_viruses(grid, pl, get_right_row(pl), get_right_column(pl));
 	}
 
