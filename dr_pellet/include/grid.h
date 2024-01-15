@@ -15,9 +15,29 @@ void init_grid(cell grid[GRID_ROWS][GRID_COLUMNS], entity* entities);
 
 entity* get_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j);
 
+void delete_cell_entity(cell grid[GRID_ROWS][GRID_COLUMNS], int row, int column);
+
 entity_type get_cell_type(cell grid[GRID_ROWS][GRID_COLUMNS], int i, int j);
 
-void clear_virus_vertical(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column);
+void clear_virus_horizontal(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column);
+
+int check_entities_below(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column);
+
+int check_entities_above(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column);
+
+int check_entities_right(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column);
+
+int check_entities_left(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column);
+
+void delete_entities_below(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column, int total_below);
+
+void delete_entities_above(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column, int total_above);
+
+void delete_entities_right(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column, int total_right);
+
+void delete_entities_left(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column, int total_left);
+
+void clear_viruses(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row, int column);
 
 void set_initial_pill(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl);
 
