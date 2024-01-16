@@ -387,16 +387,18 @@ int check_right_collision(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int row_
 
 void update_player_grid(cell grid[GRID_ROWS][GRID_COLUMNS], pill* pl, int gravity)
 {
-	if (check_left_collision(grid, pl, gravity, 0))
+	if (check_left_collision(grid, pl, gravity, 0) && get_pill_active(pl))
 	{
 		set_pill_active(pl, false);
 		clear_viruses(grid, pl, get_left_row(pl), get_left_column(pl));
+		clear_viruses(grid, pl, get_right_row(pl), get_right_column(pl));
 	}
 
-	if (check_right_collision(grid, pl, gravity, 0))
+	if (check_right_collision(grid, pl, gravity, 0) && get_pill_active(pl))
 	{
 		set_pill_active(pl, false);
 		clear_viruses(grid, pl, get_right_row(pl), get_right_column(pl));
+		clear_viruses(grid, pl, get_left_row(pl), get_left_column(pl));
 	}
 
 	if (get_pill_active(pl))

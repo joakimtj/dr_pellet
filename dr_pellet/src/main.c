@@ -219,6 +219,7 @@ int main(int argc, char** argv)
 				break;
 		}
 		
+
 		// Rendering
 		SDL_RenderClear(renderer);
 		
